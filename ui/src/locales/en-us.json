@@ -1,0 +1,27 @@
+{
+  "header": {
+    "name": "Quality Control Room",
+    "home": "Home",
+    "about": "About"
+  },
+  "footer": {
+    "copywrong": "",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "feedback": "Feedback"
+  },
+  "home": {
+    "title": "Choose the tool",
+    "defect-rate-btn": "Defects Rate Analyzer",
+    "quality-profile-btn": "Quality Profiler",
+    "help-link": {
+      "begin-text": "or check",
+      "link-text": "documentation",
+      "end-text": "for help"
+    }
+  },
+  "sidebar": {
+    "tools": "Tools",
+    "results": "Results"
+  }
+}

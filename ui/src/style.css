@@ -1,0 +1,188 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    /* Another one boring light theme*/
+    --background-color: #ffffff;
+    --primary-color: #2563eb;
+    --secondary-color: #10b981;
+    --text-color: #1f2937;
+    --border-color: #e5e7eb;
+}
+
+[data-theme="dark"] {
+    /* My nostalgic dark theme */
+    --background-color: #1D1F21;               /* Dark background, almost black */
+    --background-secondary-color: #252B2F;     /* Slightly lighter dark background */
+    --text-color: #D1D1D1;                      /* Neutral light gray for main text */
+    --muted-text-color: #A0A0A0;                /* Muted medium gray for secondary text */
+    --disabled-text-color: #5c5c5c;
+    --primary-color: #00FF00;                   /* Neon green for accents and highlights */
+    --secondary-color: #2E8B57;
+    --disabled-color: #2e392e;
+    --border-color: #444C47;                    /* Dark greenish-gray for borders */
+    --button-bg: #3E4C39;                       /* Dark olive green for button background */
+    --button-hover-bg: #4B5C46;                 /* Lighter olive green for button hover */
+    --error-color: #F08080;                     /* Muted red-orange for errorBatchVolume messages */
+}
+
+.primary-button {
+    background-color: transparent;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    width: 250px;
+    height: auto;
+    border-radius: 4px;
+    cursor: pointer;
+    transition:
+        background-color 0.3s,
+        border-color 0.3s;
+}
+
+.primary-button:disabled {
+    border-color: var(--disabled-color);
+    color: var(--disabled-text-color);
+    cursor: wait;
+}
+
+.primary-button:disabled:hover {
+    border-color: var(--disabled-color);
+}
+
+.primary-button:disabled:active {
+    box-shadow: none;
+}
+
+.secondary-button {
+    background-color: transparent;
+    color: var(--muted-text-color);
+    border: 2px solid var(--border-color);
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    width: auto;
+    height: auto;
+    border-radius: 4px;
+    cursor: pointer;
+    transition:
+        background-color 0.1s,
+        border-color 0.1s;
+}
+
+.primary-button:hover {
+    border-color: var(--primary-color);
+}
+
+.secondary-button:hover {
+    /*background-color: var(--button-hover-bg);*/
+    border-color: var(--secondary-color);
+    color: var(--text-color);
+    /*box-shadow: 0 0 1px var(--primary-color);*/
+}
+
+.primary-button:focus {
+    outline: none;
+    box-shadow: 0 0 1px var(--primary-color);
+}
+
+.secondary-button:focus, .active-tool {
+    outline: none;
+    background-color: var(--button-bg);
+    color: var(--text-color);
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 3px var(--secondary-color);
+}
+
+.primary-button:active {
+    background-color: transparent;  /* Same as hover background */
+    box-shadow: 0 0 5px var(--primary-color);
+}
+
+/* Link style */
+.muted-link {
+    color: var(--muted-text-color);
+    transition: color 0.3s, text-decoration 0.3s;
+    cursor: pointer;
+}
+
+.theme-link {
+    color: var(--secondary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s, text-decoration 0.3s;
+}
+
+.theme-link:hover, .muted-link:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+.theme-link:focus, .muted-link:focus {
+    outline: none;
+    box-shadow: 0 0 2px var(--primary-color);
+}
+
+header a, footer a {
+    transition: opacity 0.3s ease;
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+/* Input Field Styles */
+input {
+    background-color: transparent; /* Transparent background */
+    color: var(--text-color);       /* Light gray text */
+    padding: 12px 16px;             /* Adequate padding */
+    border: 1px solid var(--border-color); /* Subtle border */
+    border-radius: 8px;             /* Rounded corners */
+    outline: none;                  /* Remove default outline */
+}
+
+/* Focused State - Glowing Border */
+input:focus {
+    outline: none;
+    border: 1px solid var(--secondary-color); /* Subtle border */
+}
+
+/* Placeholder Text Style */
+input::placeholder {
+    color: var(--muted-text-color);
+}
+
+textarea {
+    background-color: transparent;  /* Transparent background */
+    color: var(--text-color);        /* Light gray text */
+    padding: 12px 16px;              /* Adequate padding */
+    border: 1px solid var(--border-color); /* Dark Green/Olive border */
+    border-radius: 8px;              /* Rounded corners */
+    outline: none;                   /* Remove default outline */
+    resize: vertical;                /* Allow vertical resizing */
+    min-height: 120px;               /* Set a minimum height */
+    width: 100%;                     /* Full width */
+}
+
+/* Focused State - Glowing Border */
+textarea:focus {
+    border: 1px solid var(--secondary-color); /* Neon green border */
+    outline: none; /* Remove default outline on focus */
+}
+
+/* Placeholder Text Style */
+textarea::placeholder {
+    color: var(--muted-text-color); /* Muted gray placeholder */
+}
+
+.error-message {
+    color: var(--error-color);
+}
+
+.min-w-lg {
+    min-width: 32rem;
+}

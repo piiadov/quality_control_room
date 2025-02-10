@@ -1,0 +1,27 @@
+{
+  "header": {
+    "name": "Quality Control Room",
+    "home": "Casa",
+    "about": "Sobre"
+  },
+  "footer": {
+    "copywrong": "",
+    "github": "GitHub",
+    "linkedin": "LinkedIn",
+    "feedback": "Feedback"
+  },
+  "home": {
+    "title": "Escolha a ferramenta",
+    "defect-rate-btn": "Analisador de defeitos",
+    "quality-profile-btn": "Perfilador de qualidade",
+    "help-link": {
+      "begin-text": "ou consulte",
+      "link-text": "a documentação",
+      "end-text": "para ajuda"
+    }
+  },
+  "sidebar": {
+    "tools": "Ferramentas",
+    "results": "Resultados"
+  }
+}
