@@ -1,0 +1,6 @@
+[workspace]
+resolver = "2"
+members = [
+    "quality_server",
+    "api_tests"
+]

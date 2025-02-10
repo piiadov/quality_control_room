@@ -1,0 +1,8 @@
+[package]
+name = "api_tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+quality_server = { path = "../quality_server" }
+approx = "0.5"
