@@ -1,9 +1,10 @@
-use ndarray::{Array1, Array2};
+use ndarray::{Array1, Array2, Array};
 use statrs::distribution::{Discrete, Hypergeometric, Beta, ContinuousCDF};
 use statrs::statistics::Statistics;
 use std::time::Instant;
 use rand::rng;
 use rand_distr::{Beta as RandBeta, Distribution};
+use rand::seq::IteratorRandom;
 use interp::{interp_slice, InterpMode};
 use rayon::prelude::*;
 use nlopt::{Algorithm, Nlopt, SuccessState};
@@ -54,7 +55,13 @@ fn mse_cost(x: &[f64], _grad: Option<&mut [f64]>, user_data: &mut (&Vec<f64>, &V
 fn main() {
     let start = Instant::now();
 
+    // Parameters
     let (population_size, sample_size): (usize, usize) = (1000, 50); // Batch and sampling sizes
+    let alpha_bounds = [1.0, 5.0];
+    let beta_bounds = [1.0, 5.0];
+    let alpha_res = 10;
+    let beta_res = 10;
+    let dist_train_size: usize = 100; // Number of examples for each pair (a,b)
 
     // Interpolation domain for CDF
     let q = Array1::linspace(0.0, 1.0, 101).to_vec();
@@ -74,12 +81,9 @@ fn main() {
             = quality_interval(population_size as u64, sample_size as u64, k as u64, 10.0);
     }
 
-    let alpha_bounds = [1.0, 5.0];
-    let beta_bounds = [1.0, 5.0];
-    let alpha_range: Array1<f64> = Array1::linspace(alpha_bounds[0], alpha_bounds[1], 10);
-    let beta_range: Array1<f64> = Array1::linspace(beta_bounds[0], beta_bounds[1], 10);
-    let dist_train_size: usize = 100; // Number of examples for each pair (a,b)
-    let iter_num = alpha_range.len() * beta_range.len() * dist_train_size;
+    let alpha_range: Array1<f64> = Array1::linspace(alpha_bounds[0], alpha_bounds[1], alpha_res);
+    let beta_range: Array1<f64> = Array1::linspace(beta_bounds[0], beta_bounds[1], beta_res);
+    let iter_num = alpha_res * beta_res * dist_train_size;
 
     // How much memory we need
     println!("Elements num: {}", iter_num);
@@ -157,7 +161,20 @@ fn main() {
     // let (q1 ,q2) = quality_interval(300,15, 3, 10.0);
     // println!("{:.4} : {:.4}", q1, q2);
 
-    // Split train/test, XGBoost, MSE test
+    // Split train/test, regression, MSE test
+
+    let test_idx: Vec<_> = (0..x.len()).choose_multiple(&mut rng(), (x.len() as f64 * 0.2) as usize);
+    let x_test: Vec<_> = test_idx.iter().map(|&i| x[i]).collect();
+    let y_test: Vec<_> = test_idx.iter().map(|&i| y[i]).collect();
+
+    let train_idx: Vec<_> = (0..x.len())
+        .filter(|&i| !test_idx.contains(&&i))
+        .collect();
+    let x_train: Vec<_> = train_idx.iter().map(|&i| x[i]).collect();
+    let y_train: Vec<_> = train_idx.iter().map(|&i| y[i]).collect();
+
+    let x_flat: Vec<f64> = x_train.iter().flat_map(|&arr| arr).collect();
+    let y_flat: Vec<_> = y_train.iter().flat_map(|&arr| arr).collect();
 
 
 
