@@ -193,6 +193,14 @@ void xgb_predict(float* data, int rows, int cols, float* pred) {
     XGDMatrixFree(dmatrix);
 }
 
+void print_rsme(float* rmse, int cols) {
+    printf("RMSE: ");
+    for (int i = 0; i < cols; ++i) {
+        printf("%f ", rmse[i]);
+    }
+    printf("\n");
+}
+
 double my_function(double x)
 {
     return x * 2.0; // Example implementation

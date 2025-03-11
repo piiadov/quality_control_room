@@ -10,6 +10,7 @@ void calculate_rmse(const float* y_pred, const float* y_test,
     int rows, int y_cols, float* rmse);
 void xgb_train(float* x, float* y, int rows, int x_cols, int y_cols);
 void xgb_predict(float* data, int rows, int cols, float* pred);
+void print_rsme(float* rmse, int cols);
 
 #ifdef __cplusplus
 extern "C" {
