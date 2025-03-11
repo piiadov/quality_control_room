@@ -1,10 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <math.h>
-#include "../src/xgbwrapper.h"
-#include <limits.h>
-#include </home/vp/GitHub/xgboost/include/xgboost/c_api.h>
+#include "test_xgbwrapper.h"
 
 void generate_data_2cols(float* x, float* y, int rows, int x_cols) {
     // Generate random x values and calculate y values
@@ -165,12 +159,9 @@ void test_generate_simple_data() {
 }
 
 
-void test_xgboost_1() {
+void test_xgboost() {
     // Test for 10000 rows, 4 features, 2 outputs
     // with data from generate_data_2cols()
-
-    // printf("Max int value (size of data array): %d\n", INT_MAX);
-    // printf("Max unsigned long value: %lu\n", ULONG_MAX);
 
     // Generate test data
     int rows = 10000;
@@ -181,7 +172,6 @@ void test_xgboost_1() {
     float* x = (float*)malloc(rows * x_cols * sizeof(float));
     float* y = (float*)malloc(rows * y_cols * sizeof(float));
     generate_data_2cols(x, y, rows, x_cols);
-    // print_data(x, y, rows, x_cols, y_cols);
 
     // Allocate memory for train and test sets
     int rows_train = (int) (rows * split_ratio); 
@@ -193,8 +183,6 @@ void test_xgboost_1() {
 
     // Split data into train and test sets
     split_data(x, y, x_train, y_train, x_test, y_test, x_cols, y_cols, rows, rows_train);
-    // print_data(x_train, y_train, rows_train, x_cols, y_cols);
-    // print_data(x_test, y_test, rows_test, x_cols, y_cols);
     
     free(x);
     free(y);
@@ -216,24 +204,26 @@ void test_xgboost_1() {
     free(rmse);
 }
 
-void test_xgboost_2() {
-    // Test for 10 rows, 4 features, 2 output
-    // with data from generate_simple_data_2cols()
-    
-    
-}
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <test_function>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
 
-int main() {
-    
-    double result = my_function(5.0);
-    printf("Result: %f\n", result);
+    if (strcmp(argv[1], "test_shuffle") == 0) {
+        test_shuffle();
+    } else if (strcmp(argv[1], "test_split_data") == 0) {
+        test_split_data();
+    } else if (strcmp(argv[1], "test_generate_data") == 0) {
+        test_generate_data();
+    } else if (strcmp(argv[1], "test_generate_simple_data") == 0) {
+        test_generate_simple_data();
+    } else if (strcmp(argv[1], "test_xgboost") == 0) {
+        test_xgboost();
+    } else {
+        fprintf(stderr, "Unknown test function: %s\n", argv[1]);
+        return EXIT_FAILURE;
+    }
 
-    test_shuffle();
-    test_split_data();
-    test_generate_data();
-    test_generate_simple_data();
-    test_xgboost_1();
-    test_xgboost_2();
-
-    return 0;
+    return EXIT_SUCCESS;
 }

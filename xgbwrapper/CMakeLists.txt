@@ -40,7 +40,11 @@ target_link_libraries(test_xgbwrapper
 )
 
 # Add a test
-add_test(NAME EXampleTest COMMAND test_xgbwrapper)
+add_test(NAME TestShuffle COMMAND test_xgbwrapper test_shuffle)
+add_test(NAME TestSplitData COMMAND test_xgbwrapper test_split_data)
+add_test(NAME TestGenerateData COMMAND test_xgbwrapper test_generate_data)
+add_test(NAME TestGenerateSimpleData COMMAND test_xgbwrapper test_generate_simple_data)
+add_test(NAME TestXGBoost COMMAND test_xgbwrapper test_xgboost)
 
 # CPack configuration
 include(CPack)

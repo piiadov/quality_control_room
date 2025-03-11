@@ -76,17 +76,20 @@ void calculate_rmse(const float* y_pred, const float* y_test,
 char* read_config(const char* filename) {
     FILE* file = fopen(filename, "rb");
     if (!file) {
-        perror("File opening failed");
         return NULL;
     }
-
+    
     fseek(file, 0, SEEK_END);
     long length = ftell(file);
     fseek(file, 0, SEEK_SET);
 
     char* content = (char*)malloc(length + 1);
     if (content) {
-        fread(content, 1, length, file);
+        if (fread(content, 1, length, file) != length) {
+            free(content);
+            fclose(file);
+            return NULL;
+        }
         content[length] = '\0';
     }
 
@@ -199,9 +202,4 @@ void print_rsme(float* rmse, int cols) {
         printf("%f ", rmse[i]);
     }
     printf("\n");
-}
-
-double my_function(double x)
-{
-    return x * 2.0; // Example implementation
 }

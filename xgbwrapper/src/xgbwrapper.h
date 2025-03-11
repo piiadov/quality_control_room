@@ -2,6 +2,11 @@
 #define XGBWRAPPER_H
 
 void shuffle(int *array, int n);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void split_data(const float* x, const float* y,
     float* x_train, float* y_train, 
     float* x_test, float* y_test,
@@ -11,12 +16,6 @@ void calculate_rmse(const float* y_pred, const float* y_test,
 void xgb_train(float* x, float* y, int rows, int x_cols, int y_cols);
 void xgb_predict(float* data, int rows, int cols, float* pred);
 void print_rsme(float* rmse, int cols);
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-double my_function(double x);
 
 #ifdef __cplusplus
 }
