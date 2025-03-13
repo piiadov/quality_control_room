@@ -1,13 +1,6 @@
-[package]
-name = "models"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-ndarray = "0.16"
-#ndarray-interp = "0.4"
-rand = "0.9"
-rand_distr="0.5"
-statrs ="0.18"
-argmin = { version = "0.10" }
-argmin-math = { version = "0.4", features = ["ndarray_latest", "nalgebra_latest"] }
+[workspace]
+resolver = "2"
+members = [
+    "train",
+    "tests"
+]

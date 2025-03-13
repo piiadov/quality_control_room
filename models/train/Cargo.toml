@@ -1,13 +1,16 @@
 [package]
-name = "train_models"
+name = "train"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ndarray = "0.16"
 statrs = "0.18"
 rand = "0.9"
 rand_distr = "0.5"
 interp = "2.0"
 rayon = "1.10"
 nlopt = "0.8"
+
+[lib]
+name = "lib"
+path = "src/lib.rs"
