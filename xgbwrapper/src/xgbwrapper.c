@@ -203,3 +203,7 @@ void print_rsme(float* rmse, int cols) {
     }
     printf("\n");
 }
+
+void print_test() {
+    printf("C function wrapper\n");
+}
