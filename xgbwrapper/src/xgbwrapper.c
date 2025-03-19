@@ -23,9 +23,9 @@ void shuffle(int *array, int n) {
 }
 
 void split_data(const float* x, const float* y,
-    float* x_train, float* y_train, 
-    float* x_test, float* y_test,
-    int x_cols, int y_cols, int rows, int rows_train) {
+                float* x_train, float* y_train, 
+                float* x_test, float* y_test,
+                int x_cols, int y_cols, int rows, int rows_train) {
 
     int* indices = (int*)malloc(rows * sizeof(int));
     shuffle(indices, (size_t)rows);
@@ -196,14 +196,10 @@ void xgb_predict(float* data, int rows, int cols, float* pred) {
     XGDMatrixFree(dmatrix);
 }
 
-void print_rsme(float* rmse, int cols) {
+void print_rmse(float* rmse, int cols) {
     printf("RMSE: ");
     for (int i = 0; i < cols; ++i) {
         printf("%f ", rmse[i]);
     }
     printf("\n");
-}
-
-void print_test() {
-    printf("C function wrapper\n");
 }

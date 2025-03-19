@@ -20,10 +20,12 @@ fn main() {
     println!("Elements num: {}", iter_num);
     let dist_mem = iter_num * size_of::<RandBeta<f64>>() + size_of::<Vec<RandBeta<f64>>>();
     println!("Memory for Beta-distributions: {} MB", dist_mem/1024/1024);
-    let y_mem = 2 * iter_num * size_of::<f64>() + size_of::<Vec<f64>>();
-    println!("Memory for y: {} MB", y_mem/1024/1024);
+    let x_mem = (4 * iter_num * size_of::<f64>() + size_of::<Vec<f64>>())
+        as f64 /1024.0 / 1024.0;
+    println!("Memory for x: {} MB", x_mem);
+    println!("Memory for y: {} MB", x_mem / 2.0);
 
-
+    // Construct x, y for regression
     let (cdf_min, cdf_max) = conf_int(population_size, sample_size);
     let (y, dist) = target_prepare(alpha_bounds, alpha_res,
                                    beta_bounds, beta_res, dist_train_size);
@@ -31,11 +33,15 @@ fn main() {
     let x = features_prepare (sample_size, cdf_min, cdf_max,
                                           dist, alpha_bounds, beta_bounds);
 
-    // XGBoost part
-    let x_flat: Vec<f64> = x.iter().flat_map(|&arr| arr).collect();
-    let y_flat: Vec<f64> = y.iter().flat_map(|&arr| arr).collect();
+    // XGBoost works with f32 (c_float)
+    let x = flat_vector::<4>(x);
+    let y = flat_vector::<2>(y);
 
-    xgb(x_flat, y_flat);
+    // Split data for train/test
+    let (x_train, y_train, x_test, y_test)
+        = c_split_data(x, y, iter_num, 4, 2, 0.75);
+
+    
 
     println!("Elapsed time: {:.3} s", start.elapsed().as_secs_f64());
 }

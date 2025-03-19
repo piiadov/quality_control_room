@@ -134,6 +134,69 @@ void test_split_data() {
     free(y_test);
 }
 
+void test_split_data_2() {
+    int rows = 10;
+    int x_cols = 4;
+    int y_cols = 2;
+    float* x = (float*)malloc(rows * x_cols * sizeof(float));
+    float* y = (float*)malloc(rows * y_cols * sizeof(float));
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < x_cols; ++j) {
+            x[i * x_cols + j] = i * x_cols + j + 1;
+        }
+        y[i * y_cols] = i + 1;
+    }
+
+    printf("x:\n");
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < x_cols; ++j) {
+            printf("%f ", x[i * x_cols + j]);
+        }
+        printf("\n");
+    }
+
+    float* x_train = (float*)malloc(8 * x_cols * sizeof(float));
+    float* y_train = (float*)malloc(8 * y_cols * sizeof(float));
+    float* x_test = (float*)malloc(2 * x_cols * sizeof(float));
+    float* y_test = (float*)malloc(2 * y_cols * sizeof(float));
+    split_data(x, y, x_train, y_train, x_test, y_test, x_cols, y_cols, rows, 8);
+    printf("x_train:\n");
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < x_cols; ++j) {
+            printf("%f ", x_train[i * x_cols + j]);
+        }
+        printf("\n");
+    }
+    // printf("y_train:\n");
+    // for (int i = 0; i < 8; ++i) {
+    //     for (int j = 0; j < y_cols; ++j) {
+    //         printf("%f ", y_train[i * y_cols + j]);
+    //     }
+    //     printf("\n");
+    // }
+    // printf("x_test:\n");
+    // for (int i = 0; i < 2; ++i) {
+    //     for (int j = 0; j < x_cols; ++j) {
+    //         printf("%f ", x_test[i * x_cols + j]);
+    //     }
+    //     printf("\n");
+    // }
+    // printf("y_test:\n");
+    // for (int i = 0; i < 2; ++i) {
+    //     for (int j = 0; j < y_cols; ++j) {
+    //         printf("%f ", y_test[i * y_cols + j]);
+    //     }
+    //     printf("\n");
+    // }
+    free(x);
+    free(y);
+    free(x_train);
+    free(y_train);
+    free(x_test);
+    free(y_test);
+}
+
+
 void test_generate_data() {
     int rows = 10;
     int x_cols = 2;
@@ -197,7 +260,7 @@ void test_xgboost() {
 
     float* rmse = (float*)malloc(y_cols * sizeof(float));
     calculate_rmse(y_pred, y_test, rows_test, y_cols, rmse);
-    print_rsme(rmse, y_cols);
+    print_rmse(rmse, y_cols);
 
     free(y_test);
     free(y_pred);
@@ -214,6 +277,8 @@ int main(int argc, char *argv[]) {
         test_shuffle();
     } else if (strcmp(argv[1], "test_split_data") == 0) {
         test_split_data();
+    } else if (strcmp(argv[1], "test_split_data_2") == 0) {
+        test_split_data_2();
     } else if (strcmp(argv[1], "test_generate_data") == 0) {
         test_generate_data();
     } else if (strcmp(argv[1], "test_generate_simple_data") == 0) {

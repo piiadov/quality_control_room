@@ -46,8 +46,7 @@ add_test(NAME TestGenerateData COMMAND test_xgbwrapper test_generate_data)
 add_test(NAME TestGenerateSimpleData COMMAND test_xgbwrapper test_generate_simple_data)
 add_test(NAME TestXGBoost COMMAND test_xgbwrapper test_xgboost)
 
-# Custom command to copy the xgbwrapper binary to a specific path after build
-set(COPY_DESTINATION /home/vp/GitHub/quality_control_room/lib) # Replace with your desired path
+set(COPY_DESTINATION /home/vp/GitHub/quality_control_room/lib)
 add_custom_command(TARGET xgbwrapper POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:xgbwrapper> ${COPY_DESTINATION}
 )
