@@ -1,10 +1,19 @@
+#[test]
 use lib::wrapper::*;
 
 #[test]
+const CONFIG_PATH: &str = "/home/vp/GitHub/quality_control_room/data/config.json";
+#[test]
+fn test_read_config() {
+    let config = read_config(CONFIG_PATH.to_string());
+    println!("conf: {:?}", config);
+}
+
+#[test]
 fn test_shuffle() {
-    let vec: Vec<i32> = vec![0,0,0,0,0];
-    c_shuffle(&vec);
-    println!("Shuffle vector: {:?}", vec);
+    let indices: Vec<i32> = vec![0,0,0,0,0];
+    c_shuffle(&indices);
+    println!("Shuffle vector: {:?}", indices);
 }
 
 #[test]
@@ -23,7 +32,7 @@ fn test_split_data() {
     println!("flat x: {:?}", x);
     println!("flat y: {:?}", y);
 
-    let (x_train, y_train,
+    let (_x_train, _y_train,
         x_test, y_test) = c_split_data(x, y, 10,
                                        4, 2, 0.75);
     println!("flat x_test: {:?}", x_test);
@@ -34,4 +43,46 @@ fn test_split_data() {
 
     println!("x_test: {:?}", x_test);
     println!("y_test: {:?}", y_test);
+}
+
+#[test]
+fn test_xgb() {
+    let rows: usize = 10000;
+    let x_cols: usize = 4;
+    let y_cols: usize = 2;
+    let (x, y) = c_generate_data_2cols(rows, x_cols);
+    let config = read_config(CONFIG_PATH.to_string());
+
+    let split_ratio: f32 = 0.8;
+    let (x_train, y_train, x_test, y_test)
+        = c_split_data(x, y, rows, x_cols, y_cols, split_ratio);
+
+    let config_clone = config.clone();
+    let rows_train = (split_ratio * rows as f32) as usize;
+    xgb_train(x_train, y_train, rows_train, x_cols, y_cols, config);
+
+    let rows_test = rows - rows_train;
+    let y_pred = xgb_predict(x_test, rows_test, x_cols, y_cols, config_clone);
+
+    let rmse = c_calculate_rmse(y_test, y_pred, rows_test, y_cols);
+    c_print_rmse(&rmse);
+}
+
+#[test]
+fn test_calculate_rmse() {
+    let y_true = vec![[1.0, 2.0], [3.0, 4.0]];
+    let y_pred = vec![[2.0, 4.0], [4.0, 6.0]];
+
+    let rows = 2;
+    let cols = 2;
+
+    let y_true = flat_vector::<2>(y_true);
+    let y_pred = flat_vector::<2>(y_pred);
+
+    println!("y_true: {:?}", y_true);
+    println!("y_pred: {:?}", y_pred);
+
+    let rmse = c_calculate_rmse(y_true, y_pred, rows, cols);
+    println!("RMSE: {:?}", rmse);
+    assert!(rmse[0] > 0.0);
 }

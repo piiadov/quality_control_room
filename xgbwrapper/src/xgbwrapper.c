@@ -3,8 +3,31 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
-#include <cjson/cJSON.h>
+#include <string.h>
 #include </home/vp/GitHub/xgboost/include/xgboost/c_api.h>
+
+void generate_data_2cols(float* x, float* y, int rows, int x_cols) {
+    // Generate random x values and calculate y values
+    srand(time(NULL));
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < x_cols; ++j) {
+            x[i * x_cols + j] = (float) rand() / RAND_MAX;
+        }
+    }
+
+    // y_cols must be 2 for the test function: y1 = sum(x) and y2 = sum(sqrt(x))
+    const int y_cols = 2; 
+    for (int i = 0; i < rows; ++i) {  
+        y[i * y_cols] = 0;
+        for (int k = 0; k < x_cols; ++k) {
+            y[i * y_cols] += x[i * x_cols + k];
+        }
+        y[i * y_cols + 1] = 0;
+        for (int k = 0; k < x_cols; ++k) {
+            y[i * y_cols + 1] += sqrt(x[i * x_cols + k]);
+        }
+    }
+}
 
 void shuffle(int *array, int n) {
     for (int i = 0; i < n; ++i) {
@@ -59,45 +82,9 @@ void split_data(const float* x, const float* y,
     free(indices);
 }
 
-void calculate_rmse(const float* y_pred, const float* y_test,
-                    int rows, int y_cols, float *rmse) {
-    
-    for (int j = 0; j < y_cols; ++j) {
-        float mse = 0.0;
-        for (int i = 0; i < rows; ++i) {
-            float diff = y_test[i * y_cols + j] - y_pred[i * y_cols + j];
-            mse += diff * diff;
-        }
-        mse /= rows;
-        rmse[j] = sqrt(mse);
-    }
-}
+void train(float* x, float *y, int rows, int x_cols, int y_cols, 
+           const KVPair* config, int len_config, const char* inference_path) { 
 
-char* read_config(const char* filename) {
-    FILE* file = fopen(filename, "rb");
-    if (!file) {
-        return NULL;
-    }
-    
-    fseek(file, 0, SEEK_END);
-    long length = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    char* content = (char*)malloc(length + 1);
-    if (content) {
-        if (fread(content, 1, length, file) != length) {
-            free(content);
-            fclose(file);
-            return NULL;
-        }
-        content[length] = '\0';
-    }
-
-    fclose(file);
-    return content;
-}
-
-void xgb_train(float* x, float *y, int rows, int x_cols, int y_cols) {
     DMatrixHandle dtrain;
     XGDMatrixCreateFromMat(x, rows, x_cols, -1, &dtrain);
     XGDMatrixSetFloatInfo(dtrain, "label", y, rows * y_cols);
@@ -106,74 +93,43 @@ void xgb_train(float* x, float *y, int rows, int x_cols, int y_cols) {
     BoosterHandle booster;
     XGBoosterCreate(&dtrain, 1, &booster);
 
-    // Read config.json
-    char* config = read_config(CONFIG_PATH);
-    if (config == NULL) {
-        fprintf(stderr, "Failed to read config file.\n");
-        exit(EXIT_FAILURE);
-    }
-    // Parse the JSON config
-    cJSON *json = cJSON_Parse(config);
-    if (json == NULL) {
-        fprintf(stderr, "Error parsing config file.\n");
-        free(config);
-        exit(EXIT_FAILURE);
-    }
-
     // Set XGBoost parameters
-    cJSON *xgb_params = cJSON_GetObjectItemCaseSensitive(json, "xgb_params");
-    if (cJSON_IsObject(xgb_params)) {
-        cJSON *param = NULL;
-        cJSON_ArrayForEach(param, xgb_params) {
-            if (cJSON_IsString(param)) {
-                int status = XGBoosterSetParam(booster, param->string, param->valuestring);
-                if (status != 0) {
-                    fprintf(stderr, "Failed to set parameter %s\n", param->string);
-                }
-            }
+    int n_estimators = 0;
+    for (int i = 0; i < len_config; ++i) {
+        if (strcmp(config[i].key, "n_estimators") == 0) {
+            n_estimators = atoi(config[i].value);
+        }
+        int status = XGBoosterSetParam(booster, config[i].key, config[i].value);
+        if (status != 0) {
+            fprintf(stderr, "Failed to set parameter %s: %s\n", config[i].key, config[i].value);
+            exit(EXIT_FAILURE);
         }
     }
-
-    // Extract n_estimators value and cast to int
-    cJSON *n_estimators_param = cJSON_GetObjectItemCaseSensitive(xgb_params, "n_estimators");
-    
-    if (n_estimators_param == NULL) {
-        fprintf(stderr, "Error: n_estimators parameter is missing.\n");
-        exit(EXIT_FAILURE);
-    }
- 
-    int n_estimators = atoi(n_estimators_param->valuestring);      
     if (n_estimators < 1) {
-        fprintf(stderr, "Error: n_estimators parameter has a value of 0 or less.\n");
+        fprintf(stderr, "Error: n_estimators parameter is missing or less than 1.\n");
         exit(EXIT_FAILURE);
     }
-
-    // Clean up config and JSON
-    cJSON_Delete(json);
-    free(config);
 
     // Train the model
     for (int i = 0; i < n_estimators; ++i) {
         XGBoosterUpdateOneIter(booster, i, dtrain);
     }
 
-    // Save the trained model to a file
-    XGBoosterSaveModel(booster, INFERENCE_PATH);
-
-    // Clean up XGBoost
+    XGBoosterSaveModel(booster, inference_path);
     XGBoosterFree(booster);
     XGDMatrixFree(dtrain);
 }
 
-void xgb_predict(float* data, int rows, int cols, float* pred) {
+void predict(float* data, int rows, int x_cols, int y_cols, const char* inference_path, 
+             float* pred) {
     DMatrixHandle dmatrix;
-    XGDMatrixCreateFromMat(data, rows, cols, -1, &dmatrix);
+    XGDMatrixCreateFromMat(data, rows, x_cols, -1, &dmatrix);
 
     BoosterHandle booster;
     XGBoosterCreate(NULL, 0, &booster);
 
     // Load the trained model from a file
-    int status = XGBoosterLoadModel(booster, INFERENCE_PATH);
+    int status = XGBoosterLoadModel(booster, inference_path);
     if (status != 0) {
         fprintf(stderr, "Failed to load model from file.\n");
         XGBoosterFree(booster);
@@ -186,6 +142,13 @@ void xgb_predict(float* data, int rows, int cols, float* pred) {
     const float* out_result;
     XGBoosterPredict(booster, dmatrix, 0, 0, 0, &out_len, &out_result);
 
+    if (out_len != y_cols * rows) {
+        fprintf(stderr, "Error: The number of predictions does not match the expected output size.\n");
+        XGBoosterFree(booster);
+        XGDMatrixFree(dmatrix);
+        exit(EXIT_FAILURE);
+    }
+
     // Copy the prediction results to the output array
     for (bst_ulong i = 0; i < out_len; ++i) {
         pred[i] = out_result[i];
@@ -194,6 +157,19 @@ void xgb_predict(float* data, int rows, int cols, float* pred) {
     // Clean up
     XGBoosterFree(booster);
     XGDMatrixFree(dmatrix);
+}
+
+void calculate_rmse(const float* y_pred, const float* y_test,
+                    int rows, int y_cols, float *rmse) {
+    for (int j = 0; j < y_cols; ++j) {
+        float mse = 0.0;
+        for (int i = 0; i < rows; ++i) {
+            float diff = y_test[i * y_cols + j] - y_pred[i * y_cols + j];
+            mse += diff * diff;
+        }
+        mse /= rows;
+        rmse[j] = sqrt(mse);
+    }
 }
 
 void print_rmse(float* rmse, int cols) {

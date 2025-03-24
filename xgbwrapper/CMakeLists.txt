@@ -1,21 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(xgbwrapper VERSION 0.1.0 LANGUAGES C)
 
-set(INFERENCE_PATH ${CMAKE_BINARY_DIR}/xgb_model.json)
-set(CONFIG_PATH ${CMAKE_SOURCE_DIR}/config.json)
-
-add_compile_definitions(
-    INFERENCE_PATH="${INFERENCE_PATH}"
-    CONFIG_PATH="${CONFIG_PATH}"
-)
-
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
-# Find the cJSON package
-find_package(cJSON REQUIRED)
-
-# Include the cJSON headers
-include_directories(${CJSON_INCLUDE_DIRS})
 
 # Include the XGBoost headers
 include_directories(/home/vp/GitHub/xgboost/include)
@@ -25,9 +11,6 @@ add_library(xgbwrapper SHARED src/xgbwrapper.c)
 
 # Specify the export macro
 target_compile_definitions(xgbwrapper PRIVATE XGBWRAPPER_EXPORTS)
-
-# Link the cJSON library
-target_link_libraries(xgbwrapper cjson)
 
 # Enable testing
 include(CTest)
@@ -50,6 +33,3 @@ set(COPY_DESTINATION /home/vp/GitHub/quality_control_room/lib)
 add_custom_command(TARGET xgbwrapper POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:xgbwrapper> ${COPY_DESTINATION}
 )
-
-# CPack configuration
-include(CPack)

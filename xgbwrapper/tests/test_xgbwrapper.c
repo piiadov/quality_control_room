@@ -1,28 +1,5 @@
 #include "test_xgbwrapper.h"
 
-void generate_data_2cols(float* x, float* y, int rows, int x_cols) {
-    // Generate random x values and calculate y values
-    srand(time(NULL));
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < x_cols; ++j) {
-            x[i * x_cols + j] = (float) rand() / RAND_MAX;
-        }
-    }
-
-    // y_cols must be 2 for the test function: y1 = sum(x) and y2 = sum(sqrt(x))
-    const int y_cols = 2; 
-    for (int i = 0; i < rows; ++i) {  
-        y[i * y_cols] = 0;
-        for (int k = 0; k < x_cols; ++k) {
-            y[i * y_cols] += x[i * x_cols + k];
-        }
-        y[i * y_cols + 1] = 0;
-        for (int k = 0; k < x_cols; ++k) {
-            y[i * y_cols + 1] += sqrt(x[i * x_cols + k]);
-        }
-    }
-}
-
 void generate_simple_data_2cols(float* x, float* y, int rows, int x_cols) {
     // Generate x as sequences of numbers and y1 as sum(x) and y2 as -sum(x)
     for (int i = 0; i < rows; ++i) {
@@ -196,7 +173,6 @@ void test_split_data_2() {
     free(y_test);
 }
 
-
 void test_generate_data() {
     int rows = 10;
     int x_cols = 2;
@@ -220,7 +196,6 @@ void test_generate_simple_data() {
     free(x);
     free(y);
 }
-
 
 void test_xgboost() {
     // Test for 10000 rows, 4 features, 2 outputs
@@ -250,12 +225,31 @@ void test_xgboost() {
     free(x);
     free(y);
 
-    xgb_train(x_train, y_train, rows_train, x_cols, y_cols);
+    char* model_path = "/home/vp/GitHub/quality_control_room/data/inferences/model.json";
+    KVPair config[] = {
+        {"booster", "gbtree"},
+        {"objective", "reg:squarederror"},
+        {"eval_metric", "rmse"},
+        {"n_thread", "8"},
+        {"subsample", "1.0"},
+        {"reg_alpha", "0.0"},
+        {"reg_lambda", "0.0"},
+        {"max_depth", "10"},
+        {"gamma", "0.0"},
+        {"learning_rate", "0.3"},
+        {"colsample_bytree", "0.3"},
+        {"eta", "0.1"},
+        {"n_estimators", "500"},
+        {"random_state", "123"}
+    };
+    int len_config = 14;
+
+    train(x_train, y_train, rows_train, x_cols, y_cols, config, len_config, model_path);
     free(x_train);
     free(y_train);
 
     float* y_pred = (float*)malloc(rows_test * y_cols * sizeof(float));
-    xgb_predict(x_test, rows_test, x_cols, y_pred);
+    predict(x_test, rows_test, x_cols, y_cols, model_path, y_pred);
     free(x_test);
 
     float* rmse = (float*)malloc(y_cols * sizeof(float));
@@ -272,7 +266,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Usage: %s <test_function>\n", argv[0]);
         return EXIT_FAILURE;
     }
-
     if (strcmp(argv[1], "test_shuffle") == 0) {
         test_shuffle();
     } else if (strcmp(argv[1], "test_split_data") == 0) {
@@ -289,6 +282,5 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Unknown test function: %s\n", argv[1]);
         return EXIT_FAILURE;
     }
-
     return EXIT_SUCCESS;
 }

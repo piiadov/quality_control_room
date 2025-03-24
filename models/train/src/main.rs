@@ -38,10 +38,11 @@ fn main() {
     let y = flat_vector::<2>(y);
 
     // Split data for train/test
-    let (x_train, y_train, x_test, y_test)
+    let (_x_train, _y_train, _x_test, _y_test)
         = c_split_data(x, y, iter_num, 4, 2, 0.75);
 
-    
+    // Train model
+
 
     println!("Elapsed time: {:.3} s", start.elapsed().as_secs_f64());
 }

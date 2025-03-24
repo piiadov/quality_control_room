@@ -16,6 +16,6 @@
         "random_state": "123"
     },
     "paths": {
-        "instances": "/home/vp/GitHub/quality_control_room/instances"
+        "inferences": "/home/vp/GitHub/quality_control_room/data/inferences/model.json"
     }
 }
