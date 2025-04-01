@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "quality_server",
+    "server",
+    "models",
     "tests"
 ]

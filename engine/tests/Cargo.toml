@@ -4,5 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-quality_server = { path = "../quality_server" }
+server = { path = "../server", package = "server" }
+models = { path = "../models", package = "models" }
 approx = "0.5"
+csv = "1.3"
