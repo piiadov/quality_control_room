@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 train = { path = "../train" }
+csv = "1.3"

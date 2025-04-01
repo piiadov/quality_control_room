@@ -8,7 +8,7 @@ use rayon::prelude::*;
 use statrs::distribution::{Discrete, Hypergeometric, Beta, ContinuousCDF};
 use statrs::statistics::Statistics;
 
-fn generate_range(bounds: [f64; 2], resolution: usize) -> Vec<f64> {
+pub fn generate_range(bounds: [f64; 2], resolution: usize) -> Vec<f64> {
     (0..resolution)
         .map(|i| bounds[0] + i as f64 * (bounds[1] - bounds[0]) / (resolution - 1) as f64)
         .collect()
@@ -52,6 +52,7 @@ fn mse_cost(x: &[f64], _grad: Option<&mut [f64]>, user_data: &mut (&Vec<f64>, &V
         let pred = 1.0 - beta_dist.cdf(user_data.0[i]);
         sse += (pred - user_data.1[i]).powi(2);
     }
+
     sse / points_num as f64
 }
 
@@ -101,9 +102,10 @@ pub fn target_prepare(alpha_bounds: [f64; 2], alpha_res: usize,
     (y, dist)
 }
 
-pub fn features_prepare (sample_size: usize, cdf_min: Vec<f64>,
-                         cdf_max: Vec<f64>, dist: Vec<RandBeta<f64>>,
-                         alpha_bounds: [f64; 2], beta_bounds: [f64; 2]) -> Vec<[f64; 4]>{
+pub fn features_prepare_nm(sample_size: usize, cdf_min: Vec<f64>,
+                           cdf_max: Vec<f64>, dist: Vec<RandBeta<f64>>,
+                           alpha_bounds: [f64; 2], beta_bounds: [f64; 2],
+                           init_params: [f64;2]) -> Vec<[f64; 4]>{
 
     let iter_num = dist.len();
     let mut x: Vec<[f64; 4]> = Vec::with_capacity(iter_num);
@@ -134,19 +136,23 @@ pub fn features_prepare (sample_size: usize, cdf_min: Vec<f64>,
             // Fit curves
             let mut opt = Nlopt::new(Algorithm::Neldermead, 2,
                                      mse_cost, Minimize, (&q, &cdf_min_int));
-            opt.set_lower_bounds(&[alpha_bounds[0], beta_bounds[0]]).unwrap();
-            opt.set_upper_bounds(&[alpha_bounds[1], beta_bounds[1]]).unwrap();
-            opt.set_maxeval(1000).unwrap();
+
+            opt.set_lower_bounds(&[alpha_bounds[0]*0.7, beta_bounds[0]*0.7]).unwrap();
+            opt.set_upper_bounds(&[alpha_bounds[1]*1.3, beta_bounds[1]*1.3]).unwrap();
+
+            opt.set_maxeval(10000).unwrap();
             opt.set_xtol_abs1(1e-20).unwrap();
-            let mut params_min = [1.0f64, 1.0f64];
+            let mut params_min = init_params.clone();
             let stat_min = opt.optimize(&mut params_min)
                 .expect("Optimization failed");
 
             let mut opt = Nlopt::new(Algorithm::Neldermead, 2,
                                      mse_cost, Minimize, (&q, &cdf_max_int));
-            opt.set_lower_bounds(&[alpha_bounds[0], beta_bounds[0]]).unwrap();
-            opt.set_upper_bounds(&[alpha_bounds[1], beta_bounds[1]]).unwrap();
-            opt.set_maxeval(1000).unwrap();
+
+            opt.set_lower_bounds(&[alpha_bounds[0]*0.7, beta_bounds[0]*0.7]).unwrap();
+            opt.set_upper_bounds(&[alpha_bounds[1]*1.3, beta_bounds[1]*1.3]).unwrap();
+
+            opt.set_maxeval(10000).unwrap();
             opt.set_xtol_abs1(1e-20).unwrap();
             let mut params_max = [1.0f64, 1.0f64];
             let stat_max = opt.optimize(&mut params_max)

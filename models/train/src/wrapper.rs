@@ -28,7 +28,8 @@ struct KVPair {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
-    pub xgb_params: XGBParams,
+    pub main_params: XGBParams,
+    pub test_params: XGBParams,
     pub paths: Paths,
 }
 
@@ -52,7 +53,7 @@ pub struct XGBParams {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Paths {
-    pub inferences: String,
+    pub data_folder: String,
 }
 
 pub fn read_config(path: String) -> Config {
@@ -138,23 +139,24 @@ pub fn c_generate_data_2cols(rows: usize, x_cols: usize) -> (Vec<f32>, Vec<f32>)
 }
 
 pub fn xgb_train(x: Vec<f32>, y: Vec<f32>, rows: usize,
-                 x_cols: usize, y_cols: usize, config: Config) {
-    
+                 x_cols: usize, y_cols: usize,
+                 xgb_params: XGBParams, folder_path: String, filename: String) {
+    let filename = CString::new(format!("{}/{}", folder_path, filename)).unwrap();
     let params = vec![
-        ("booster", config.xgb_params.booster),
-        ("objective", config.xgb_params.objective),
-        ("eval_metric", config.xgb_params.eval_metric),
-        ("n_thread", config.xgb_params.n_thread),
-        ("subsample", config.xgb_params.subsample),
-        ("reg_alpha", config.xgb_params.reg_alpha),
-        ("reg_lambda", config.xgb_params.reg_lambda),
-        ("max_depth", config.xgb_params.max_depth),
-        ("gamma", config.xgb_params.gamma),
-        ("learning_rate", config.xgb_params.learning_rate),
-        ("colsample_bytree", config.xgb_params.colsample_bytree),
-        ("eta", config.xgb_params.eta),
-        ("n_estimators", config.xgb_params.n_estimators),
-        ("random_state", config.xgb_params.random_state),
+        ("booster", xgb_params.booster),
+        ("objective", xgb_params.objective),
+        ("eval_metric", xgb_params.eval_metric),
+        ("n_thread", xgb_params.n_thread),
+        ("subsample", xgb_params.subsample),
+        ("reg_alpha", xgb_params.reg_alpha),
+        ("reg_lambda", xgb_params.reg_lambda),
+        ("max_depth", xgb_params.max_depth),
+        ("gamma", xgb_params.gamma),
+        ("learning_rate", xgb_params.learning_rate),
+        ("colsample_bytree", xgb_params.colsample_bytree),
+        ("eta", xgb_params.eta),
+        ("n_estimators", xgb_params.n_estimators),
+        ("random_state", xgb_params.random_state),
     ];
 
     let kv_pairs: Vec<KVPair> = params.into_iter().map(|(key, value)| {
@@ -164,17 +166,17 @@ pub fn xgb_train(x: Vec<f32>, y: Vec<f32>, rows: usize,
         }
     }).collect();
     let len_config = kv_pairs.len() as c_int;
-    let inference_path = CString::new(config.paths.inferences).unwrap();
     unsafe {
         train(x.as_ptr() as *const c_float, y.as_ptr() as *const c_float,
               rows as c_int, x_cols as c_int, y_cols as c_int,
-              kv_pairs.as_ptr(), len_config, inference_path.as_ptr());
+              kv_pairs.as_ptr(), len_config, filename.as_ptr());
     }
 }
 
-pub fn xgb_predict(x: Vec<f32>, rows: usize, x_cols: usize, y_cols: usize, config: Config) -> Vec<f32> {
+pub fn xgb_predict(x: Vec<f32>, rows: usize, x_cols: usize, y_cols: usize,
+                   inference_path: String) -> Vec<f32> {
     assert_eq!(x.len(), rows * x_cols, "x.len() != rows * x_cols");
-    let inference_path = CString::new(config.paths.inferences).unwrap();
+    let inference_path = CString::new(inference_path).unwrap();
     let mut pred: Vec<f32> = Vec::with_capacity(y_cols * rows);
     pred.resize(y_cols * rows, 0.0);
     unsafe {

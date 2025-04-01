@@ -1,8 +1,13 @@
-#[test]
+#[allow(unused_imports)]
 use lib::wrapper::*;
+use csv::{ReaderBuilder, Trim};
+use std::fs::File;
+use std::path::Path;
+use lib::train::generate_range;
 
-#[test]
+#[allow(dead_code)]
 const CONFIG_PATH: &str = "/home/vp/GitHub/quality_control_room/data/config.json";
+
 #[test]
 fn test_read_config() {
     let config = read_config(CONFIG_PATH.to_string());
@@ -57,12 +62,14 @@ fn test_xgb() {
     let (x_train, y_train, x_test, y_test)
         = c_split_data(x, y, rows, x_cols, y_cols, split_ratio);
 
-    let config_clone = config.clone();
+    let folder_path = config.paths.data_folder.clone();
+
     let rows_train = (split_ratio * rows as f32) as usize;
-    xgb_train(x_train, y_train, rows_train, x_cols, y_cols, config);
+    xgb_train(x_train, y_train, rows_train, x_cols, y_cols, config.test_params, folder_path, "xgb_test.json".to_string());
 
     let rows_test = rows - rows_train;
-    let y_pred = xgb_predict(x_test, rows_test, x_cols, y_cols, config_clone);
+    let y_pred = xgb_predict(x_test, rows_test, x_cols, y_cols,
+                             config.paths.data_folder + "/xgb_test.json");
 
     let rmse = c_calculate_rmse(y_test, y_pred, rows_test, y_cols);
     c_print_rmse(&rmse);
@@ -85,4 +92,69 @@ fn test_calculate_rmse() {
     let rmse = c_calculate_rmse(y_true, y_pred, rows, cols);
     println!("RMSE: {:?}", rmse);
     assert!(rmse[0] > 0.0);
+}
+
+fn read_csv_file<const N: usize>(path: String) -> Vec<[f64; N]>
+where
+    [f64; N]: Sized {
+    assert!(N > 0);
+    let file = File::open(Path::new(path.as_str())).expect("Failed to open file");
+    let mut reader = ReaderBuilder::new()
+        .trim(Trim::All)
+        .has_headers(false)
+        .from_reader(file);
+    let mut data: Vec<[f64; N]> = Vec::new();
+    for result in reader.records() {
+        let record = result.expect("Failed to read record");
+        if record.len() != N {
+            panic!("Invalid record length. Expected {} columns.", N);
+        }
+        let row: [f64; N] = (0..N)
+            .map(|i| record[i].parse().expect(&format!("Failed to parse column {}", i + 1)))
+            .collect::<Vec<f64>>()
+            .try_into()
+            .expect("Failed to convert row into fixed-size array");
+        data.push(row);
+    }
+    data
+}
+
+#[test]
+fn test_xgb_loaded_data() {
+    let path = "/home/vp/GitHub/quality_control_room/data/".to_string();
+    let x = read_csv_file::<4>(path.clone() + "xtest.txt");
+    let y = read_csv_file::<2>(path + "ytest.txt");
+
+    let x_cols = 4;
+    let y_cols = 2;
+    let rows = x.len();
+    let x = flat_vector::<4>(x);
+    let y = flat_vector::<2>(y);
+
+    let config = read_config(CONFIG_PATH.to_string());
+
+    let split_ratio: f32 = 0.8;
+    let (x_train, y_train, x_test, y_test)
+        = c_split_data(x, y, rows, x_cols, y_cols, split_ratio);
+
+    let folder_path = config.paths.data_folder.clone();
+    let rows_train = (split_ratio * rows as f32) as usize;
+    xgb_train(x_train, y_train, rows_train, x_cols, y_cols, config.test_params,
+              folder_path, "xgb_test.json".to_string());
+
+    //let inference_path = config.paths.test_inference;
+    let rows_test = rows - rows_train;
+    let y_pred = xgb_predict(x_test, rows_test, x_cols, y_cols,
+                             config.paths.data_folder + "/xgb_test.json");
+
+    let rmse = c_calculate_rmse(y_test, y_pred, rows_test, y_cols);
+    c_print_rmse(&rmse);
+}
+
+#[test]
+fn test_range() {
+    let a = 0.1;
+    let b = 10.0;
+    let range = generate_range([a, b], 100);
+    println!("range: {:?}", range);
 }

@@ -162,13 +162,12 @@ void predict(float* data, int rows, int x_cols, int y_cols, const char* inferenc
 void calculate_rmse(const float* y_pred, const float* y_test,
                     int rows, int y_cols, float *rmse) {
     for (int j = 0; j < y_cols; ++j) {
-        float mse = 0.0;
+        float sse = 0.0;
         for (int i = 0; i < rows; ++i) {
             float diff = y_test[i * y_cols + j] - y_pred[i * y_cols + j];
-            mse += diff * diff;
+            sse += diff * diff;
         }
-        mse /= rows;
-        rmse[j] = sqrt(mse);
+        rmse[j] = sqrt(sse / rows);
     }
 }
 
