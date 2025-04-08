@@ -24,7 +24,8 @@
     --border-color: #444C47;                    /* Dark greenish-gray for borders */
     --button-bg: #3E4C39;                       /* Dark olive green for button background */
     --button-hover-bg: #4B5C46;                 /* Lighter olive green for button hover */
-    --error-color: #F08080;                     /* Muted red-orange for errorBatchVolume messages */
+    --error-color: #F08080;                     /* Muted red-orange for error messages */
+    --info-color: #00FFFF;                      /* Neon blue for info messages */
 }
 
 .primary-button {
@@ -181,6 +182,10 @@ textarea::placeholder {
 
 .error-message {
     color: var(--error-color);
+}
+
+.info-message {
+    color: var(--info-color);
 }
 
 .min-w-lg {

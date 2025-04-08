@@ -47,13 +47,20 @@ export const useSettings = defineStore('settings', {
     }),
 })
 
-export const useQualityProfile = defineStore('quality-profile', {
-    state: () => ({
-        batchVolume: 0,
+export const useQualityProfileInput = defineStore('quality-profile-input', {
+    state: () => ({        
+        testMode: true,
+        batchVolume: "",
         samplingData: [],
+        minValue: "",
+        maxValue: ""
+    }),
+})
+
+export const useQualityProfileResults = defineStore('quality-profile-results', {
+    state: () => ({
         showResults: false,
-        info: null,
-        x: [],
+        info: "",
         q: []
     }),
 })

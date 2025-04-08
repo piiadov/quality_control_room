@@ -114,10 +114,8 @@ const languageStore = useLanguageStore();
         </a>
       </div>
 
-      <!-- Copywrong -->
       <div class="mt-2 text-sm text-center" style="display: inline-flex; align-items: center; gap: 5px;">
         <span><img src="https://img.shields.io/badge/license-MIT-6C757D.svg?style=flat-square" alt="License: MIT"></span>
-        <span>Vasilii Piiadov. All wrongs reserved.</span>
       </div>
 
     </footer>

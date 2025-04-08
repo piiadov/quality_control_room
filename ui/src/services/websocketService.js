@@ -23,9 +23,19 @@ class WebSocketService {
         });
     }
 
-    sendCommand(command, data = null) {
+    sendCommand(command, storage) {
         return new Promise((resolve, reject) => {
-            const message = {command, data: data};
+            const message = {
+                // Structure matched with the backend
+                command: command,
+                test_mode: storage.testMode,
+                population_size: storage.batchVolume,
+                min_value: storage.minValue,
+                max_value: storage.maxValue,
+                data: storage.samplingData,
+            };
+            // alert("Sending command: " + JSON.stringify(message));
+            
             if (this.socket && this.socket.readyState === WebSocket.OPEN) {
                 this.socket.send(JSON.stringify(message));
 
@@ -53,12 +63,12 @@ class WebSocketService {
         }
     }
 
-    connectAndSendData(command, data = null) {
+    connectAndSendData(command, storage) {
         return this.connect()
             .then(connectionStatus  => {
                 console.log('Connection status:', connectionStatus.status);
                 if (connectionStatus.status === 'connected') {
-                    return this.sendCommand(command, data);
+                    return this.sendCommand(command, storage);
                 } else {
                     throw connectionStatus;
                 }

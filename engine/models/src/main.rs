@@ -2,14 +2,16 @@ use libmodels::train::*;
 use libmodels::wrapper::*;
 use std::time::Instant;
 
+const CONFIG_PATH: &str = "/home/vp/GitHub/quality_control_room/data/config.json";
+
 fn main() {
-    let config = read_config("/home/vp/GitHub/quality_control_room/data/config.json".to_string());
+    let config = read_config(CONFIG_PATH.to_string());
     let folder_path = config.paths.data_folder;
     let main_params = config.main_params;
 
     let alpha_res: usize = 100;
     let beta_res: usize = 100;
-    let dist_train_size: usize = 100; // Number of examples for each pair (a,b)
+    let dist_train_size: usize = 200; // Number of examples for each pair (a,b)
     let rows = alpha_res * beta_res * dist_train_size;
     println!("Data size: {} rows", rows);
 
@@ -29,7 +31,7 @@ fn main() {
         .expect("Failed to write headers to rmse.csv");
     wtr.flush().expect("Failed to flush csv writer");
 
-    for sample_size in 100..102 {
+    for sample_size in [10, 50] {
         println!("Sample size: {}", sample_size);
         let start = Instant::now();
 

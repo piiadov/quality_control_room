@@ -1,10 +1,10 @@
 <script setup>
 
 import { onMounted, onUnmounted } from 'vue';
-import {useSidebarStore, useQualityProfile} from "../../store/index.js";
+import {useSidebarStore, useQualityProfileResults} from "../../store/index.js";
 
 const sidebarStore = useSidebarStore();
-const qualityProfile = useQualityProfile();
+const qualityProfileResults = useQualityProfileResults();
 
 onMounted(() => {
   sidebarStore.sidebarResults = true;
@@ -57,7 +57,7 @@ onUnmounted(() => {
   <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-6">
 
 
-    <p>{{ qualityProfile.q}}</p>
+    <p>{{ qualityProfileResults.q}}</p>
 
 
   </div>

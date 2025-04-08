@@ -1,85 +1,107 @@
 <script setup>
 import WebSocketService from '../../services/websocketService.js'
 import { ref, onMounted } from 'vue';
-import { useSettings, useSidebarStore, useQualityProfile } from '../../store/index.js';
+import { useSettings, useSidebarStore, 
+  useQualityProfileInput, useQualityProfileResults } from '../../store/index.js';
 import { QuestionMarkCircleIcon } from "@heroicons/vue/24/outline/index.js";
 import Results from './Results.vue';
 
 const sidebarStore = useSidebarStore();
 const settingsStore = useSettings();
-const qualityProfileStore = useQualityProfile();
+const qualityProfileInputStore = useQualityProfileInput();
+const qualityProfileResultsStore = useQualityProfileResults();
 
 const isDisabled = ref(false);
-const batchVolume = ref('');
-const samplingData = ref('');
-const errorBatchVolume = ref(null);
-const errorSamplingData = ref(null);
-const errorServerResponse = ref(null);
+const errorMessage = ref(null);
 
 onMounted(() => {
   sidebarStore.activeTool = "QualityProfile";
-
-  if (qualityProfileStore.batchVolume > 0) {
-    batchVolume.value = qualityProfileStore.batchVolume.toString();
-  }
-
-  if (qualityProfileStore.samplingData.length > 0) {
-    samplingData.value = qualityProfileStore.samplingData.join(', ');
-  }
-
 });
 
 function stringToNumberArray(str) {
   return str !== "" && str.match(/-?\d*\.?\d+/g) ? str.match(/-?\d*\.?\d+/g).map(Number) : [];
 }
 
-function stringToPositiveInteger(str) {
-  return /^[1-9]\d*$/.test(str) ? parseInt(str, 10) :null;
-}
-
 const submitData = () => {
-  errorBatchVolume.value = null;
-  errorSamplingData.value = null;
+  errorMessage.value = null;
 
-  const volume = stringToPositiveInteger(batchVolume.value.toString());
-  if (!volume) {
-    errorBatchVolume.value = 'Please enter valid positive integer number';
-    qualityProfileStore.showResults = false;
+  const volume = parseInt(qualityProfileInputStore.batchVolume.toString(), 10);
+  if ((volume === NaN || volume < 1) && !qualityProfileInputStore.testMode) {
+    errorMessage.value = 'Dscretization: Please enter valid positive integer number';
+    qualityProfileResultsStore.showResults = false;
+    return;
+  } else {
+    qualityProfileInputStore.batchVolume = volume;
+  }
+
+  const minValue = parseFloat(qualityProfileInputStore.minValue.toString());
+  const maxValue = parseFloat(qualityProfileInputStore.maxValue.toString());
+  if ((minValue === NaN || maxValue === NaN) && !qualityProfileInputStore.testMode) {
+    errorMessage.value = 'Min or Max value: Please enter valid float number';
+    qualityProfileResultsStore.showResults = false;
+    return;
+  } else {
+    qualityProfileInputStore.minValue = minValue;
+    qualityProfileInputStore.maxValue = maxValue;
+  }
+
+  if ((minValue >= maxValue) && !qualityProfileInputStore.testMode) {
+    errorMessage.value = 'Min value must be less than max value';
+    qualityProfileResultsStore.showResults = false;
     return;
   }
 
-  const data = stringToNumberArray(samplingData.value.toString());
-  if (data.length === 0) {
-    errorSamplingData.value = 'Please enter valid float numbers';
-    qualityProfileStore.showResults = false;
+  const data = stringToNumberArray(qualityProfileInputStore.samplingData.toString());
+  if (data.length === 0 && !qualityProfileInputStore.testMode) {
+    errorMessage.value = 'Sampling data: Please enter valid float numbers';
+    qualityProfileResultsStore.showResults = false;
+    return;
+  } else {
+    qualityProfileInputStore.samplingData = data;
+  }
+
+  if (volume < data.length && !qualityProfileInputStore.testMode) {
+    errorMessage.value = 'Batch volume or discretization factor must be greater than sampling size';
+    qualityProfileResultsStore.showResults = false;
     return;
   }
 
-  if (volume < data.length) {
-    errorBatchVolume.value = 'Batch volume or discretization factor must be greater than sampling size';
-    qualityProfileStore.showResults = false;
+  const areAllValuesInRange = data.every(value => value >= qualityProfileInputStore.minValue && value <= qualityProfileInputStore.maxValue);
+  if (!areAllValuesInRange && !qualityProfileInputStore.testMode) {
+    errorMessage.value = 'Sampling data: All values must be within the specified range';
+    qualityProfileResultsStore.showResults = false;
     return;
   }
 
-  // alert("Sending volume " + volume + " and data " + data);
   isDisabled.value = true;
   const ws = new WebSocketService(settingsStore.backendUrl, settingsStore.connectTimeout);
-  ws.connectAndSendData('calc', data)
-      .then(response => {
-        errorServerResponse.value = null;
+  ws.connectAndSendData('calc', qualityProfileInputStore)
+    .then(response => {
+      if (response.data.error > 0) {
+        errorMessage.value = 'Backend error: ' + response.data.info;
         isDisabled.value = false;
-        qualityProfileStore.batchVolume = volume;
-        qualityProfileStore.samplingData = data;
-        qualityProfileStore.info = response.data.info;
-        qualityProfileStore.x = response.data.x;
-        qualityProfileStore.q = response.data.q;
-        qualityProfileStore.showResults = true;
-      })
-      .catch(error => {
-        errorServerResponse.value = error.message;
+        qualityProfileResultsStore.showResults = false;
+        return;
+      } else {
+        errorMessage.value = null;
         isDisabled.value = false;
-        qualityProfileStore.showResults = false;
-      });
+
+        qualityProfileInputStore.batchVolume = response.data.population_size;
+        qualityProfileInputStore.minValue = response.data.min_value;
+        qualityProfileInputStore.maxValue = response.data.max_value;
+        qualityProfileInputStore.samplingData = response.data.data;
+
+        qualityProfileResultsStore.info = response.data.info;
+        qualityProfileResultsStore.q = response.data.q;
+        
+        qualityProfileResultsStore.showResults = true;
+      }
+    })
+    .catch(error => {
+      errorMessage.value = error.message;
+      isDisabled.value = false;
+      qualityProfileResultsStore.showResults = false;
+    });
 };
 </script>
 
@@ -87,27 +109,74 @@ const submitData = () => {
   <header class="text-left mb-2 text-3xl font-semibold text-text p-4">
     <h1>Quantitative Quality Profiler</h1>
   </header>
+
   <main class="flex flex-1 justify-start gap-4 p-4">
-    <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-6">
-      <div>
-        <div class="flex items-center justify-between space-x-2">
-          <label for="batch-volume" class="block text-lg text-text">Batch volume/discretization</label>
-          <router-link to="/about">
-            <QuestionMarkCircleIcon class="h-5 w-5 muted-link " />
-          </router-link>
+    <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-4">
+
+      <!-- Message if test mode -->
+      <div v-if="qualityProfileInputStore.testMode" class="h-2 info-message text-sm">
+        Test mode
+      </div>
+
+      <!--Error message-->
+      <div v-if="errorMessage" class="error-message text-sm h-4">{{ errorMessage }}</div>
+      
+      <!-- Discretization and Min/Max values -->
+      <div class="flex space-x-4">
+        <!-- Batch volume/discretization -->
+        <div class="flex-1">
+          <div class="flex items-center justify-between space-x-2">
+        <label for="batch-volume" class="block text-lg text-text">Discretization</label>
+        <router-link to="/about">
+          <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
+        </router-link>
+          </div>
+          <input
+          v-model="qualityProfileInputStore.batchVolume"
+          type="text"
+          id="batch-volume"
+          class="mt-2 w-full p-3"
+          placeholder="Enter an integer"
+          />
         </div>
-        <input
-            v-model="batchVolume"
-            type="text"
-            id="batch-volume"
-            class="mt-2 w-full p-3"
-            placeholder="Enter an integer"
-        />
-        <div class="h-2 error-message text-sm mt-2">{{ errorBatchVolume }}</div>
+
+        <!-- Min Value -->
+        <div class="flex-1">
+          <div class="flex items-center justify-between space-x-2">
+        <label for="min-value" class="block text-lg text-text">Min Value</label>
+        <router-link to="/about">
+          <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
+        </router-link>
+          </div>
+          <input
+          v-model="qualityProfileInputStore.minValue"
+          type="text"
+          id="min-value"
+          class="mt-2 w-full p-3"
+          placeholder="Enter a value"
+          />
+        </div>
+
+        <!-- Max Value -->
+        <div class="flex-1">
+          <div class="flex items-center justify-between space-x-2">
+        <label for="max-value" class="block text-lg text-text">Max Value</label>
+        <router-link to="/about">
+          <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
+        </router-link>
+          </div>
+          <input
+          v-model="qualityProfileInputStore.maxValue"
+          type="text"
+          id="max-value"
+          class="mt-2 w-full p-3"
+          placeholder="Enter a value"
+          />
+        </div>
       </div>
 
       <div>
-        <!-- Textarea Field -->
+        <!-- Sampling data -->
         <div class="flex items-center justify-between space-x-2">
 
           <label for="sampling-data" class="block text-lg text-text">
@@ -123,23 +192,22 @@ const submitData = () => {
           </router-link>
         </div>
         <textarea
-            v-model="samplingData"
+            v-model="qualityProfileInputStore.samplingData"
             id="sampling-data"
             rows="4"
             class="mt-2 w-full p-3 border border-border-color"
             placeholder="Enter numbers separated with new line, comma or space"
         ></textarea>
-        <div class="h-2 error-message text-sm mt-2">{{ errorSamplingData }}</div>
       </div>
 
+      <!-- Submit Button -->
       <div>
         <div class="text-center">
           <button @click="submitData" class="primary-button" :disabled="isDisabled">Analyze</button>
         </div>
-        <div class="h-2 error-message text-sm mt-2">{{ errorServerResponse }}</div>
       </div>
     </div>
-    <Results v-if="qualityProfileStore.showResults"/>
+    <Results v-if="qualityProfileResultsStore.showResults"/>
   </main>
 </template>
 

@@ -24,22 +24,19 @@ async fn handle_socket(websocket: ws::WebSocket) {
                 if let Ok(request) = serde_json::from_str::<ApiRequest>(text) {
                     match request.command.as_str() {
                         "calc" => {
-                            if let Some(data) = request.data {
-                                let response = handle_calc(data);
-                                let response_json =
+                            let response = handle_calc(
+                                request.test_mode,
+                                request.data.unwrap_or(vec![]),
+                                request.min_value.unwrap_or(f64::NAN),
+                                request.max_value.unwrap_or(f64::NAN),
+                                request.population_size.unwrap_or(0),
+                            );
+                            let response_json =
                                     serde_json::to_string(&response).unwrap_or("{}".to_string());
-                                if let Err(e) =
-                                    tx.send(ws::Message::text(response_json)).await
-                                {
-                                    eprintln!("Failed to send response: {}", e);
-                                }
-                            } else {
-                                let error_message = "Missing data for calc command";
-                                if let Err(e) =
-                                    tx.send(ws::Message::text(error_message)).await
-                                {
-                                    eprintln!("Failed to send error message: {}", e);
-                                }
+                        
+                            if let Err(e) =
+                                    tx.send(ws::Message::text(response_json)).await {
+                                eprintln!("Failed to send response: {}", e);
                             }
                         }
                         "about" => {

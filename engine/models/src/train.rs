@@ -5,8 +5,26 @@ use nlopt::Target::Minimize;
 use rand::rng;
 use rand_distr::{Beta as RandBeta, Distribution};
 use rayon::prelude::*;
-use statrs::distribution::{Discrete, Hypergeometric, Beta, ContinuousCDF};
+use statrs::distribution::{Discrete, Hypergeometric, Beta, ContinuousCDF, Continuous};
 use statrs::statistics::Statistics;
+
+fn hypergeometric_pmf(n_total: u64, k_total: u64, n: u64, k: u64) -> f64 {
+    // Slow but can work with large numbers,
+    // when statrs::distribution::Hypergeometric fails
+    if k > k_total || k > n || n > n_total || n - k > n_total - k_total {
+        eprintln!(
+            "Out-of-bounds case in hypergeometric PMF: N {}, K {}, n {}, k {}",
+            n_total, k_total, n, k
+        );
+        return 0.0;
+    }
+    fn log_factorial(n: u64) -> f64 {
+        (1..=n).fold(0.0, |acc, x| acc + (x as f64).ln())
+    }
+    let log_comb = |a: u64, b: u64| log_factorial(a) - log_factorial(b) - log_factorial(a - b);
+    let log_pmf = log_comb(k_total, k) + log_comb(n_total - k_total, n - k) - log_comb(n_total, n);
+    log_pmf.exp()
+}
 
 pub fn generate_range(bounds: [f64; 2], resolution: usize) -> Vec<f64> {
     (0..resolution)
@@ -14,14 +32,23 @@ pub fn generate_range(bounds: [f64; 2], resolution: usize) -> Vec<f64> {
         .collect()
 }
 
-fn quality_interval(population_size: u64, sample_size: u64,
+pub fn quality_interval(population_size: u64, sample_size: u64,
                     sample_successes: u64, prob_threshold_factor: f64) -> (f64, f64) {
     let prob: Vec<f64> = (sample_successes
         ..= population_size - sample_size + sample_successes)
         .map(|population_successes|
-            Hypergeometric::new(population_size, population_successes, sample_size)
-                .expect("Invalid parameters for hypergeometric distribution")
-                .pmf(sample_successes)
+             {
+                 let mut p = Hypergeometric::new(population_size, population_successes, sample_size)
+                     .expect("Invalid parameters for hypergeometric distribution")
+                     .pmf(sample_successes);
+                 if p.is_nan() {
+                     // Fallback when Hypergeometric fails
+                     // It should not be happened if user's problem defined well
+                     p = hypergeometric_pmf(population_size, population_successes,
+                                            sample_size, sample_successes);
+                 }
+                 p
+             }
         )
         .collect();
 
@@ -144,7 +171,7 @@ pub fn features_prepare_nm(sample_size: usize, cdf_min: Vec<f64>,
             opt.set_xtol_abs1(1e-20).unwrap();
             let mut params_min = init_params.clone();
             let stat_min = opt.optimize(&mut params_min)
-                .expect("Optimization failed");
+                .expect("Fitting failed");
 
             let mut opt = Nlopt::new(Algorithm::Neldermead, 2,
                                      mse_cost, Minimize, (&q, &cdf_max_int));
@@ -156,10 +183,73 @@ pub fn features_prepare_nm(sample_size: usize, cdf_min: Vec<f64>,
             opt.set_xtol_abs1(1e-20).unwrap();
             let mut params_max = [1.0f64, 1.0f64];
             let stat_max = opt.optimize(&mut params_max)
-                .expect("Optimization failed");
+                .expect("Fitting failed");
 
             *x_i = [params_min[0], params_min[1], params_max[0], params_max[1]];
             *opt_stat_i = [stat_min, stat_max];
         });
     x
+}
+
+pub fn cdf_fitting(data: Vec<f64>, cdf_min: Vec<f64>, cdf_max: Vec<f64>,
+                   alpha_bounds: [f64; 2], beta_bounds: [f64; 2],
+                   init_params: [f64;2], interp_domain: Vec<f64>) -> [f64;4]{
+    let mut samples: Vec<f64> = Vec::with_capacity(data.len()+2);
+    samples.push(0.0);
+    samples.extend(data);
+    samples.push(1.0);
+    samples.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+
+    let cdf_min_int: Vec<f64> = interp_slice(&samples, &cdf_min,
+                                             &interp_domain, &InterpMode::default());
+    let cdf_max_int: Vec<f64> = interp_slice(&samples, &cdf_max,
+                                             &interp_domain, &InterpMode::default());
+
+    let mut opt = Nlopt::new(Algorithm::Neldermead, 2,
+                             mse_cost, Minimize, (&interp_domain, &cdf_min_int));
+    opt.set_lower_bounds(&[alpha_bounds[0]*0.7, beta_bounds[0]*0.7]).unwrap();
+    opt.set_upper_bounds(&[alpha_bounds[1]*1.3, beta_bounds[1]*1.3]).unwrap();
+    opt.set_maxeval(10000).unwrap();
+    opt.set_xtol_abs1(1e-20).unwrap();
+    let mut params_min = init_params.clone();
+    let _stat_min = opt.optimize(&mut params_min)
+        .expect("Fitting failed");
+
+    let mut opt = Nlopt::new(Algorithm::Neldermead, 2,
+                             mse_cost, Minimize, (&interp_domain, &cdf_max_int));
+    opt.set_lower_bounds(&[alpha_bounds[0]*0.7, beta_bounds[0]*0.7]).unwrap();
+    opt.set_upper_bounds(&[alpha_bounds[1]*1.3, beta_bounds[1]*1.3]).unwrap();
+    opt.set_maxeval(10000).unwrap();
+    opt.set_xtol_abs1(1e-20).unwrap();
+    let mut params_max = [1.0f64, 1.0f64];
+    let _stat_max = opt.optimize(&mut params_max)
+        .expect("Fitting failed");
+
+    [params_min[0], params_min[1], params_max[0], params_max[1]]
+}
+
+pub fn beta_cdf(domain: Vec<f64>, alpha: f64, beta: f64) -> Vec<f64> {
+    // Generate a beta distribution with the given parameters
+    // and calculate the CDF for the given domain
+    domain.iter().map(|&x| {
+        let dist = Beta::new(alpha, beta)
+            .expect("Invalid Beta distribution parameters");
+        dist.cdf(x)
+    }).collect()
+}
+
+pub fn beta_pdf(domain: Vec<f64>, alpha: f64, beta: f64) -> Vec<f64> {
+    // Generate a beta distribution with the given parameters
+    // and calculate the PDF for the given domain
+    domain.iter().map(|&x| {
+        let dist = Beta::new(alpha, beta)
+            .expect("Invalid Beta distribution parameters");
+        dist.pdf(x)
+    }).collect()
+}
+
+pub fn generate_beta_random_numbers(n: usize, alpha: f64, beta: f64) -> Vec<f64> {
+    let beta = RandBeta::new(alpha, beta).unwrap();
+    let mut rng = rng();
+    (0..n).map(|_| beta.sample(&mut rng)).collect()
 }

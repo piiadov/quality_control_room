@@ -12,7 +12,8 @@ export default {
         border: 'var(--border-color)',
         buttonBg: 'var(--button-bg)',
         buttonHoverBg: 'var(--button-hover-bg)',
-        error: 'var(--errorBatchVolume-color)',
+        error: 'var(--error-color)',
+        info: 'var(--info-color)',
       },
       fontFamily: {
         sans: ['Inter', 'Arial', 'sans-serif'],

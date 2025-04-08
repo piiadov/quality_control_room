@@ -1,10 +1,36 @@
 use models::wrapper::*;
-use models::train::generate_range;
+use models::train::{conf_int, generate_range, quality_interval};
 use csv::{ReaderBuilder, Trim};
 use std::fs::File;
 use std::path::Path;
+use approx::assert_abs_diff_eq;
 
 const CONFIG_PATH: &str = "/home/vp/GitHub/quality_control_room/data/config.json";
+
+fn read_csv_file<const N: usize>(path: String) -> Vec<[f64; N]>
+where
+    [f64; N]: Sized {
+    assert!(N > 0);
+    let file = File::open(Path::new(path.as_str())).expect("Failed to open file");
+    let mut reader = ReaderBuilder::new()
+        .trim(Trim::All)
+        .has_headers(false)
+        .from_reader(file);
+    let mut data: Vec<[f64; N]> = Vec::new();
+    for result in reader.records() {
+        let record = result.expect("Failed to read record");
+        if record.len() != N {
+            panic!("Invalid record length. Expected {} columns.", N);
+        }
+        let row: [f64; N] = (0..N)
+            .map(|i| record[i].parse().expect(&format!("Failed to parse column {}", i + 1)))
+            .collect::<Vec<f64>>()
+            .try_into()
+            .expect("Failed to convert row into fixed-size array");
+        data.push(row);
+    }
+    data
+}
 
 #[test]
 fn test_read_config() {
@@ -92,31 +118,6 @@ fn test_calculate_rmse() {
     assert!(rmse[0] > 0.0);
 }
 
-fn read_csv_file<const N: usize>(path: String) -> Vec<[f64; N]>
-where
-    [f64; N]: Sized {
-    assert!(N > 0);
-    let file = File::open(Path::new(path.as_str())).expect("Failed to open file");
-    let mut reader = ReaderBuilder::new()
-        .trim(Trim::All)
-        .has_headers(false)
-        .from_reader(file);
-    let mut data: Vec<[f64; N]> = Vec::new();
-    for result in reader.records() {
-        let record = result.expect("Failed to read record");
-        if record.len() != N {
-            panic!("Invalid record length. Expected {} columns.", N);
-        }
-        let row: [f64; N] = (0..N)
-            .map(|i| record[i].parse().expect(&format!("Failed to parse column {}", i + 1)))
-            .collect::<Vec<f64>>()
-            .try_into()
-            .expect("Failed to convert row into fixed-size array");
-        data.push(row);
-    }
-    data
-}
-
 #[test]
 fn test_xgb_loaded_data() {
     let path = "/home/vp/GitHub/quality_control_room/data/".to_string();
@@ -155,4 +156,57 @@ fn test_range() {
     let b = 10.0;
     let range = generate_range([a, b], 100);
     println!("range: {:?}", range);
+}
+
+#[test]
+fn test_quality() {
+    let (q0, q1) = quality_interval(300, 5, 4, 10.0);
+    assert_abs_diff_eq!(q0, 0.33, epsilon = 1e-2);
+    assert_abs_diff_eq!(q1, 0.99, epsilon = 1e-2);
+
+    let (q0, q1) = quality_interval(300, 15, 10, 10.0);
+    assert_abs_diff_eq!(q0, 0.40, epsilon = 1e-2);
+    assert_abs_diff_eq!(q1, 0.87, epsilon = 1e-2);
+
+    let (q0, q1) = quality_interval(3_000, 150, 100, 10.0);
+    assert_abs_diff_eq!(q0, 0.58, epsilon = 1e-2);
+    assert_abs_diff_eq!(q1, 0.74, epsilon = 1e-2);
+
+    let (q0, q1) = quality_interval(30_000, 1_500, 1_000, 10.0);
+    assert_abs_diff_eq!(q0, 0.64, epsilon = 1e-2);
+    assert_abs_diff_eq!(q1, 0.69, epsilon = 1e-2);
+}
+
+#[test]
+fn test_cdf_min_max() {
+    let (cdf_min, cdf_max) = conf_int(3_000, 150);
+    println!("cdf_min: {:?}", cdf_min);
+    println!("cdf_max: {:?}", cdf_max);
+}
+
+#[test]
+fn test_cdf_comparison() {
+    let population_size = 1000;
+    let sample_size = 10;
+    let (cdf_min_1, cdf_max_1) = conf_int(population_size, sample_size);
+    println!("Sampling size ratio: {:.2}",
+             population_size as f64 / sample_size as f64);
+
+    let population_size = 100;
+    let sample_size = 10;
+    let (cdf_min_2, cdf_max_2) = conf_int(population_size, sample_size);
+    println!("Sampling size ratio: {:.2}",
+             population_size as f64 / sample_size as f64);
+
+    let differences: Vec<f64> = cdf_min_1.iter()
+        .zip(cdf_min_2.iter())
+        .map(|(a, b)| a - b)
+        .collect();
+    println!("Differences between cdf_min_1 and cdf_min_2: {:?}", differences);
+
+    let differences: Vec<f64> = cdf_max_1.iter()
+        .zip(cdf_max_2.iter())
+        .map(|(a, b)| a - b)
+        .collect();
+    println!("Differences between cdf_max_1 and cdf_max_2: {:?}", differences);
 }

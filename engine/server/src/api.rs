@@ -1,100 +1,191 @@
+use models::wrapper::*;
+use models::train::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
+const CONFIG_PATH: &str = "/home/vp/GitHub/quality_control_room/data/config.json";
+
+#[derive(Deserialize, Debug)]
 pub struct ApiRequest {
+    pub test_mode: bool,
     pub command: String,
-    pub data: Option<Vec<f64>>, // Optional for non-calc commands
+    pub data: Option<Vec<f64>>,
+    pub min_value: Option<f64>,
+    pub max_value: Option<f64>,
+    pub population_size: Option<usize>,
 }
 
 #[derive(Serialize, Debug)]
 pub struct Response {
     command: String,
     info: String,
-    pub x: Vec<f64>,
-    pub q: Vec<Vec<f64>>,
+    error: u8,
+    population_size: usize,
+    min_value: f64,
+    max_value: f64,
+    data: Vec<f64>,
+    scaled_data: Vec<f64>,
+    cdf_min: Vec<f64>,
+    cdf_max: Vec<f64>,
+    q: Vec<f64>,
+    fitted_cdf_min: Vec<f64>,
+    fitted_cdf_max: Vec<f64>,
+    fitted_pdf_min: Vec<f64>,
+    fitted_pdf_max: Vec<f64>,
+    beta_params_min: [f64; 2],
+    beta_params_max: [f64; 2],
+    predicted_beta_params: [f64; 2],
+    predicted_cdf: Vec<f64>,
+    predicted_pdf: Vec<f64>,
+    test_mode_beta_params: [f64; 2],
+    test_mode_cdf: Vec<f64>,
+    test_mode_pdf: Vec<f64>,
+}
+
+impl Default for Response {
+    fn default() -> Self {
+        Response {
+            command: "".to_string(),
+            info: "".to_string(),
+            error: 1,
+            population_size: 0,
+            min_value: 0.0,
+            max_value: 0.0,
+            data: vec![],
+            scaled_data: vec![],
+            cdf_min: vec![],
+            cdf_max: vec![],
+            q: vec![],
+            fitted_cdf_min: vec![],
+            fitted_cdf_max: vec![],
+            fitted_pdf_min: vec![],
+            fitted_pdf_max: vec![],
+            beta_params_min: [0.0;2],
+            beta_params_max: [0.0;2],
+            predicted_beta_params: [0.0;2],
+            predicted_cdf: vec![],
+            predicted_pdf: vec![],
+            test_mode_beta_params: [0.0;2],
+            test_mode_cdf: vec![],
+            test_mode_pdf: vec![],
+        }
+    }
 }
 
 pub fn handle_about() -> Response {
-    Response {
-        command: "About".to_string(),
-        info: "Quality analysis engine v1.1".to_string(),
-        x: vec![],
-        q: vec![]
+    let version = env!("CARGO_PKG_VERSION");
+
+    let mut response = Response::default();
+    response.command = "About".to_string();
+    response.info = format!("Quality analysis engine v{}", version);
+    response.error = 0;
+    response
+}
+
+pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64, mut max_value: f64, mut population_size: usize) -> Response {
+    let mut response = Response::default();
+    response.command = "Calc using Beta-distribution".to_string();
+
+    // Interpolation domain
+    let q = generate_range([0.0, 1.0], 101);
+    response.q = q.clone();
+
+    let config = read_config(CONFIG_PATH.to_string());
+    let folder_path = config.paths.data_folder;
+
+    if test_mode {
+        let (a, b) = (3.0, 3.0);
+        population_size = 3000;
+        data = generate_beta_random_numbers(100, a, b);
+        min_value = 0.0;
+        max_value = 1.0;
+        response.test_mode_beta_params = [a, b];
+        response.test_mode_cdf = beta_cdf(q.clone(), a, b);
+        response.test_mode_pdf = beta_pdf(q.clone(), a, b);
     }
-}
 
-pub fn handle_calc(data: Vec<f64>) -> Response {
-    let n_total = data.len() as u64 * 50; // n_total >> n for small sampling
-    let (x, q) = quant_quality(n_total, data);
-    Response {
-        command: "Calc".to_string(),
-        info: "Calculation OK".to_string(),
-        x,
-        q
+    response.population_size = population_size;
+    response.min_value = min_value;
+    response.max_value = max_value;
+    response.data = data.clone();
+
+    let fn_inference = format!("{}/xgb_{}.json", folder_path, data.len());
+
+    // Check if population_size is valid
+    if population_size == 0 {
+        response.info = "population_size must be greater than 0".to_string();
+        return response;
     }
-}
 
-fn log_factorial(n: u64) -> f64 {
-    (1..=n).fold(0.0, |acc, x| acc + (x as f64).ln())
-}
-
-pub fn hypergeometric_pmf(n_total: u64, k_total: u64, n: u64, k: u64) -> f64 {
-    if k > k_total || k > n || n > n_total || n - k > n_total - k_total {
-        eprintln!(
-            "Out-of-bounds case in hypergeometric PMF: N {}, K {}, n {}, k {}",
-            n_total, k_total, n, k
-        );
-        return 0.0;
+    // Check if min_value and max_value are valid
+    if min_value >= max_value {
+        response.info = "min_value must be less than max_value".to_string();
+        return response;
     }
-    let log_comb = |a: u64, b: u64| log_factorial(a) - log_factorial(b) - log_factorial(a - b);
-    let log_pmf = log_comb(k_total, k) + log_comb(n_total - k_total, n - k) - log_comb(n_total, n);
-    log_pmf.exp()
-}
 
-pub fn quality(n_total: u64, n: u64, k: u64, p_threshold_factor: u64) -> Vec<f64> {
-    let k_total: Vec<_> = (k..=n_total - n + k).collect();
+    // Check if inference exists
+    if !std::path::Path::new(&fn_inference).exists() {
+        response.info = "Inference file not found".to_string();
+        return response;
+    }
+    // Check if data is empty
+    if data.is_empty() {
+        response.info = "Data is empty".to_string();
+        return response;
+    }
+    // Check if data is valid
+    if data.iter().any(|&x| x.is_nan() || x.is_infinite()) {
+        response.info = "Data contains NaN or infinite values".to_string();
+        return response;
+    }
 
-    let p: Vec<_> = k_total
-        .iter()
-        .map(|&k_total| hypergeometric_pmf(n_total, k_total, n, k))
+    // Scale sampling data with min_value and max_value to [0, 1]
+    let scaled_data: Vec<f64> = data.iter()
+        .map(|&x| (x - min_value) / (max_value - min_value))
         .collect();
 
-    let p_threshold = p
-        .iter()
-        .max_by(|a, b| a.partial_cmp(b).unwrap())
-        .copied()
-        .unwrap_or(0.0)
-        / p_threshold_factor as f64;
+    // Check if scaled data is in [0, 1]
+    if scaled_data.iter().any(|&x| x < 0.0 || x > 1.0) {
+        response.info = "Scaled data is out of bounds [0, 1]".to_string();
+        return response;
+    }
+    let sample_size = scaled_data.len();
+    response.scaled_data = scaled_data.clone();
 
-    let index_min = p.iter().position(|&x| x >= p_threshold).unwrap_or(0);
+    // Get confidence intervals for CDF
+    let (cdf_min, cdf_max) = conf_int(population_size, sample_size);
+    response.cdf_min = cdf_min.clone();
+    response.cdf_max = cdf_max.clone();
 
-    let quality_min = k_total[index_min] as f64 / n_total as f64;
+    // Get fitted min/max beta-distributions
+    let init_params = [0.1, 0.1];
+    let alpha_bounds = [0.1, 10.0];
+    let beta_bounds = [0.1, 10.0];
+    let fitted_params = cdf_fitting(scaled_data.clone(), cdf_min, cdf_max, alpha_bounds, beta_bounds, 
+                init_params, q.clone());
+    response.beta_params_min = [fitted_params[0], fitted_params[1]];
+    response.beta_params_max = [fitted_params[2], fitted_params[3]];
 
-    let index_max = p
-        .iter()
-        .rposition(|&x| x >= p_threshold)
-        .unwrap_or(p.len() - 1);
+    // Get fitted CDF and PDF
+    response.fitted_cdf_min = beta_cdf(q.clone(), fitted_params[0], fitted_params[1]);
+    response.fitted_cdf_max = beta_cdf(q.clone(), fitted_params[2], fitted_params[3]);
+    response.fitted_pdf_min = beta_pdf(q.clone(), fitted_params[0], fitted_params[1]);
+    response.fitted_pdf_max = beta_pdf(q.clone(), fitted_params[2], fitted_params[3]);
+    
+    // Get predicted beta-distribution parameters
+    let x: Vec<f32> = fitted_params.iter().map(|&x| x as f32).collect();
+    let pred = xgb_predict(x, 1, 4, 2,
+        fn_inference);
+    response.predicted_beta_params = [pred[0] as f64, pred[1] as f64];
 
-    let quality_max = k_total[index_max] as f64 / n_total as f64;
-
-    vec![quality_min, quality_max]
-}
-
-pub fn quant_quality(n_total: u64, data: Vec<f64>) -> (Vec<f64>, Vec<Vec<f64>>) {
-    let mut data_range: Vec<f64> = data.iter().copied().collect();
-    data_range.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    data_range.dedup();
-
-    let mut k: Vec<_> = data_range
-        .iter()
-        .map(|&x| data.iter().filter(|&&y| y >= x).count())
-        .collect();
-    k.push(0);
-
-    (
-        data_range,
-        k.iter()
-            .map(|&x| quality(n_total, data.len() as u64, x as u64, 10))
-            .collect(),
-    )
+    // Get predicted CDF and PDF
+    response.predicted_cdf = beta_cdf(q.clone(), pred[0] as f64, pred[1] as f64);
+    response.predicted_pdf = beta_pdf(q.clone(), pred[0] as f64, pred[1] as f64);
+    if test_mode {
+        response.info = "Test mode".to_string();
+    }
+    response.error = 0;
+    // println!("beta_params_min: {:?}", response.beta_params_min);
+    // println!("beta_params_max: {:?}", response.beta_params_max);
+    // println!("predicted_beta_params: {:?}", response.predicted_beta_params);
+    response
 }
