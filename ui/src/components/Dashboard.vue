@@ -1,11 +1,11 @@
 <script setup>
 import { useI18n, } from 'vue-i18n';
-import { useSidebarStore } from '../store/index';
-import QualityProfileSidebarResults from './quality_profile/SidebarResults.vue';
+import { sidebarStore } from '../store/index';
+import BetaSidebarResults from './beta_tool/SidebarResults.vue';
 import DefectsRateSidebarResults from './defects_rate/SidebarResults.vue';
 
 const { t } = useI18n();
-const sidebarStore = useSidebarStore();
+const sidebar = sidebarStore();
 </script>
 
 <template>
@@ -19,23 +19,23 @@ const sidebarStore = useSidebarStore();
       <div class="space-y-4 p-4">
         <router-link to="/tools/defects-rate">
           <button class="secondary-button mb-4 min-w-full"
-                  :class="[sidebarStore.activeTool === 'DefectsRate'? 'active-tool': '']">
+                  :class="[sidebar.activeTool === 'DefectsRate'? 'active-tool': '']">
             {{ t('home.defect-rate-btn') }}
           </button>
         </router-link>
 
-        <router-link to="/tools/quality-profile">
+        <router-link to="/tools/beta-profile">
           <button class="secondary-button mb-4 min-w-full"
-                  :class="[sidebarStore.activeTool === 'QualityProfile'? 'active-tool': '']">
-            {{ t('home.quality-profile-btn') }}
+                  :class="[sidebar.activeTool === 'BetaProfile'? 'active-tool': '']">
+            {{ t('home.beta-profile-btn') }}
           </button>
         </router-link>
       </div>
 
-      <QualityProfileSidebarResults
-          v-if="sidebarStore.activeTool === 'QualityProfile' && sidebarStore.sidebarResults" />
+      <BetaSidebarResults
+          v-if="sidebar.activeTool === 'BetaProfile' && sidebar.sidebarResults" />
       <DefectsRateSidebarResults
-          v-if="sidebarStore.activeTool === 'DefectsRate' && sidebarStore.sidebarResults" />
+          v-if="sidebar.activeTool === 'DefectsRate' && sidebar.sidebarResults" />
     </aside>
 
     <div class="flex-1 p-6">

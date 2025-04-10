@@ -12,8 +12,8 @@ const { t } = useI18n();
         <button class="primary-button">{{ t('home.defect-rate-btn') }}</button>
       </router-link>
 
-      <router-link to="/tools/quality-profile">
-        <button class="primary-button">{{ t('home.quality-profile-btn') }}</button>
+      <router-link to="/tools/beta-profile">
+        <button class="primary-button">{{ t('home.beta-profile-btn') }}</button>
       </router-link>
     </div>
 

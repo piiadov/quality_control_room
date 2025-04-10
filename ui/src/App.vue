@@ -1,10 +1,10 @@
 <script setup>
 import { HomeIcon, InformationCircleIcon, SunIcon, MoonIcon } from '@heroicons/vue/24/outline';
-import { useThemeStore, useLanguageStore } from "./store";
+import { themeStore, languageStore } from "./store";
 import { useI18n, } from 'vue-i18n';
 const { t } = useI18n();
-const themeStore = useThemeStore();
-const languageStore = useLanguageStore();
+const theme = themeStore();
+const language = languageStore();
 </script>
 
 <template>
@@ -51,8 +51,8 @@ const languageStore = useLanguageStore();
         </router-link>
 
         <!-- Theme Toggle Button -->
-        <button @click="themeStore.toggleTheme" class="flex items-center px-3 py-2 hover:opacity-80">
-          <template v-if="themeStore.currentTheme === 'light'">
+        <button @click="theme.toggleTheme" class="flex items-center px-3 py-2 hover:opacity-80">
+          <template v-if="theme.currentTheme === 'light'">
             <MoonIcon class="h-6 w-6 text-current" />
           </template>
           <template v-else>
@@ -62,10 +62,10 @@ const languageStore = useLanguageStore();
 
         <!-- Language Toggle Button -->
         <button
-            @click="languageStore.toggleLanguage"
+            @click="language.toggleLanguage"
             class="flex items-center justify-center h-10 w-10 hover:opacity-80"
         >
-          <template v-if="languageStore.currentLanguage === 'en-us'">
+          <template v-if="language.currentLanguage === 'en-us'">
             <span class="fi fi-us text-lg grayscale"></span>
           </template>
           <template v-else>

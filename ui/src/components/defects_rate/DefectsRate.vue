@@ -1,11 +1,11 @@
 <script setup>
 import { onMounted } from 'vue';
-import { useSidebarStore } from '../../store/index.js';
+import { sidebarStore } from '../../store/index.js';
 
-const sidebarStore = useSidebarStore();
+const sidebar = sidebarStore();
 
 onMounted(() => {
-  sidebarStore.activeTool = "DefectsRate";
+  sidebar.activeTool = "DefectsRate";
 });
 
 </script>

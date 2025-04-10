@@ -1,64 +1,65 @@
 <script setup>
 
 import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
-import { useSidebarStore, useQualityProfileInput, useQualityProfileResults } from "../../store/index.js";
+import { sidebarStore, betaInputStore, betaResultsStore }
+        from "../../store/index.js";
 import { Chart, registerables } from 'chart.js';
 
-const sidebarStore = useSidebarStore();
-const qualityProfileResults = useQualityProfileResults();
-const qualityProfileInput = useQualityProfileInput();
+const sidebar = sidebarStore();
+const betaResults = betaResultsStore();
+const betaInputs = betaInputStore();
 
 Chart.register(...registerables);
 const cdfChartRef = ref(null);
 let cdfChart = null;
 
 const cdfMin = computed(() =>
-  qualityProfileResults.scaledData.map((x, i) => ({
+  betaResults.scaledData.map((x, i) => ({
     x: x,
-    y: qualityProfileResults.cdfMin[i],
+    y: betaResults.cdfMin[i],
   }))
 );
 
 const cdfMax = computed(() =>
-  qualityProfileResults.scaledData.map((x, i) => ({
+  betaResults.scaledData.map((x, i) => ({
     x: x,
-    y: qualityProfileResults.cdfMax[i],
+    y: betaResults.cdfMax[i],
   }))
 );
 
 const fittedCdfMin = computed(() =>
-  qualityProfileResults.q.map((x, i) => ({
+  betaResults.q.map((x, i) => ({
     x: x,
-    y: qualityProfileResults.fittedCdfMin[i],
+    y: betaResults.fittedCdfMin[i],
   }))
 );
 
 const fittedCdfMax = computed(() =>
-  qualityProfileResults.q.map((x, i) => ({
+  betaResults.q.map((x, i) => ({
     x: x,
-    y: qualityProfileResults.fittedCdfMax[i],
+    y: betaResults.fittedCdfMax[i],
   }))
 );
 
 const predictedCdf = computed(() =>
-  qualityProfileResults.q.map((x, i) => ({
+  betaResults.q.map((x, i) => ({
     x: x,
-    y: qualityProfileResults.predictedCdf[i],
+    y: betaResults.predictedCdf[i],
   }))
 );
 
 let testModeCdf = null;
-if (qualityProfileInput.testMode) {
+if (betaInputs.testMode) {
   testModeCdf = computed(() =>
-    qualityProfileResults.q.map((x, i) => ({
+    betaResults.q.map((x, i) => ({
       x: x,
-      y: qualityProfileResults.testModeCdf[i],
+      y: betaResults.testModeCdf[i],
     }))
   );
 }
 
 onMounted(() => {
-  sidebarStore.sidebarResults = true;
+  sidebar.sidebarResults = true;
 
   if (cdfChartRef.value) {
     cdfChart = new Chart(cdfChartRef.value, {
@@ -109,7 +110,7 @@ onMounted(() => {
             fill: false,
             pointRadius: 0,
           },
-          ...(qualityProfileInput.testMode
+          ...(betaInputs.testMode
             ? [
                 {
                   type: 'line',
@@ -196,7 +197,7 @@ watch(
       cdfChart.data.datasets[2].data = newFittedCdfMin;
       cdfChart.data.datasets[3].data = newFittedCdfMax;
       cdfChart.data.datasets[4].data = newPredictedCdf;
-      if (qualityProfileInput.testMode) {
+      if (betaInputs.testMode) {
         cdfChart.data.datasets[5].data = newTestModeCdf;
       }
       cdfChart.update();
@@ -205,7 +206,7 @@ watch(
 );
 
 onUnmounted(() => {
-  sidebarStore.sidebarResults = false;
+  sidebar.sidebarResults = false;
   if (cdfChart) {
     cdfChart.destroy();
   }
@@ -214,18 +215,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-
   <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-4">
-
     <canvas ref="cdfChartRef" style="width: 500px; height: 500px;"></canvas>
-
   </div>
-
-
-
-
 </template>
-
-<style scoped>
-
-</style>

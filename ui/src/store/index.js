@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import i18n from '../services/i18n';
 
-export const useThemeStore = defineStore("theme", {
+export const themeStore = defineStore("theme", {
     state: () => ({
         currentTheme: localStorage.getItem('theme') || 'dark',
     }),
@@ -19,7 +19,7 @@ export const useThemeStore = defineStore("theme", {
     },
 });
 
-export const useLanguageStore = defineStore('language', {
+export const languageStore = defineStore('language', {
     state: () => ({
         currentLanguage: localStorage.getItem('language') || 'en-us', // Default to English
     }),
@@ -33,31 +33,31 @@ export const useLanguageStore = defineStore('language', {
     },
 });
 
-export const useSidebarStore = defineStore('sidebar', {
+export const sidebarStore = defineStore('sidebar', {
     state: () => ({
         activeTool: "",
         sidebarResults: false
     }),
 });
 
-export const useSettings = defineStore('settings', {
+export const settingsStore = defineStore('settings', {
     state: () => ({
         backendUrl: 'ws://localhost:8080/quality',
         connectTimeout: 5000,
     }),
 })
 
-export const useQualityProfileInput = defineStore('quality-profile-input', {
+export const betaInputStore = defineStore('quality-profile-input', {
     state: () => ({        
         testMode: true,
-        batchVolume: "",
+        batchVolume: NaN,
         samplingData: [],
-        minValue: "",
-        maxValue: ""
+        minValue: NaN,
+        maxValue: NaN
     }),
 })
 
-export const useQualityProfileResults = defineStore('quality-profile-results', {
+export const betaResultsStore = defineStore('quality-profile-results', {
     state: () => ({
         showResults: false,
         info: "",

@@ -1,15 +1,15 @@
 <script setup>
 import { onMounted, onUnmounted } from 'vue';
-import {useSidebarStore} from "../../store/index.js";
+import { sidebarStore } from "../../store/index.js";
 
-const sidebarStore = useSidebarStore();
+const sidebar = sidebarStore();
 
 onMounted(() => {
-  sidebarStore.sidebarResults = true;
+  sidebar.sidebarResults = true;
 });
 
 onUnmounted(() => {
-  sidebarStore.sidebarResults = false;
+  sidebar.sidebarResults = false;
 })
 
 </script>

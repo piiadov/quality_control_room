@@ -12,7 +12,7 @@
   "home": {
     "title": "Choose the tool",
     "defect-rate-btn": "Defects Rate Analyzer",
-    "quality-profile-btn": "Quality Profiler",
+    "beta-profile-btn": "Beta-Distribution Profiler",
     "help-link": {
       "begin-text": "or check",
       "link-text": "documentation",
