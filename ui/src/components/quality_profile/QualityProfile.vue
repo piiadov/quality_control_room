@@ -92,8 +92,22 @@ const submitData = () => {
         qualityProfileInputStore.samplingData = response.data.data;
 
         qualityProfileResultsStore.info = response.data.info;
+        qualityProfileResultsStore.scaledData = response.data.scaled_data;
+        qualityProfileResultsStore.cdfMin = response.data.cdf_min;
+        qualityProfileResultsStore.cdfMax = response.data.cdf_max;
         qualityProfileResultsStore.q = response.data.q;
-        
+        qualityProfileResultsStore.fittedCdfMin = response.data.fitted_cdf_min;
+        qualityProfileResultsStore.fittedCdfMax = response.data.fitted_cdf_max;
+        qualityProfileResultsStore.fittedPdfMin = response.data.fitted_pdf_min;
+        qualityProfileResultsStore.fittedPdfMax = response.data.fitted_pdf_max;
+        qualityProfileResultsStore.betaParamsMin = response.data.beta_params_min;
+        qualityProfileResultsStore.betaParamsMax = response.data.beta_params_max;
+        qualityProfileResultsStore.predictedBetaParams = response.data.predicted_beta_params;
+        qualityProfileResultsStore.predictedCdf = response.data.predicted_cdf;
+        qualityProfileResultsStore.predictedPdf = response.data.predicted_pdf;
+        qualityProfileResultsStore.testModeBetaParams = response.data.test_mode_beta_params;
+        qualityProfileResultsStore.testModeCdf = response.data.test_mode_cdf;
+        qualityProfileResultsStore.testModePdf = response.data.test_mode_pdf;
         qualityProfileResultsStore.showResults = true;
       }
     })
@@ -132,11 +146,11 @@ const submitData = () => {
         </router-link>
           </div>
           <input
-          v-model="qualityProfileInputStore.batchVolume"
-          type="text"
-          id="batch-volume"
-          class="mt-2 w-full p-3"
-          placeholder="Enter an integer"
+            v-model="qualityProfileInputStore.batchVolume"
+            type="text"
+            id="batch-volume"
+            class="mt-2 w-full p-3"
+            placeholder="Enter an integer"
           />
         </div>
 
@@ -149,11 +163,11 @@ const submitData = () => {
         </router-link>
           </div>
           <input
-          v-model="qualityProfileInputStore.minValue"
-          type="text"
-          id="min-value"
-          class="mt-2 w-full p-3"
-          placeholder="Enter a value"
+            v-model="qualityProfileInputStore.minValue"
+            type="text"
+            id="min-value"
+            class="mt-2 w-full p-3"
+            placeholder="Enter a value"
           />
         </div>
 
@@ -166,11 +180,11 @@ const submitData = () => {
         </router-link>
           </div>
           <input
-          v-model="qualityProfileInputStore.maxValue"
-          type="text"
-          id="max-value"
-          class="mt-2 w-full p-3"
-          placeholder="Enter a value"
+            v-model="qualityProfileInputStore.maxValue"
+            type="text"
+            id="max-value"
+            class="mt-2 w-full p-3"
+            placeholder="Enter a value"
           />
         </div>
       </div>

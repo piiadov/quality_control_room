@@ -1,106 +1,228 @@
 <script setup>
 
-import { onMounted, onUnmounted } from 'vue';
-import {useSidebarStore, useQualityProfileResults} from "../../store/index.js";
+import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
+import { useSidebarStore, useQualityProfileInput, useQualityProfileResults } from "../../store/index.js";
+import { Chart, registerables } from 'chart.js';
 
 const sidebarStore = useSidebarStore();
 const qualityProfileResults = useQualityProfileResults();
+const qualityProfileInput = useQualityProfileInput();
+
+Chart.register(...registerables);
+const cdfChartRef = ref(null);
+let cdfChart = null;
+
+const cdfMin = computed(() =>
+  qualityProfileResults.scaledData.map((x, i) => ({
+    x: x,
+    y: qualityProfileResults.cdfMin[i],
+  }))
+);
+
+const cdfMax = computed(() =>
+  qualityProfileResults.scaledData.map((x, i) => ({
+    x: x,
+    y: qualityProfileResults.cdfMax[i],
+  }))
+);
+
+const fittedCdfMin = computed(() =>
+  qualityProfileResults.q.map((x, i) => ({
+    x: x,
+    y: qualityProfileResults.fittedCdfMin[i],
+  }))
+);
+
+const fittedCdfMax = computed(() =>
+  qualityProfileResults.q.map((x, i) => ({
+    x: x,
+    y: qualityProfileResults.fittedCdfMax[i],
+  }))
+);
+
+const predictedCdf = computed(() =>
+  qualityProfileResults.q.map((x, i) => ({
+    x: x,
+    y: qualityProfileResults.predictedCdf[i],
+  }))
+);
+
+let testModeCdf = null;
+if (qualityProfileInput.testMode) {
+  testModeCdf = computed(() =>
+    qualityProfileResults.q.map((x, i) => ({
+      x: x,
+      y: qualityProfileResults.testModeCdf[i],
+    }))
+  );
+}
 
 onMounted(() => {
   sidebarStore.sidebarResults = true;
+
+  if (cdfChartRef.value) {
+    cdfChart = new Chart(cdfChartRef.value, {
+      type: 'scatter',
+      data: {
+        datasets: [
+          {
+            type: 'scatter',
+            label: 'Estimated CDF Min',
+            data: cdfMin.value,
+            borderColor: '#2E8B57',
+            pointRadius: 2,
+          },
+          {
+            type: 'scatter',
+            label: 'Estimated CDF Max',
+            data: cdfMax.value,
+            borderColor: '#2E8B57',
+            pointRadius: 2,
+          },
+          {
+            type: 'line',
+            label: 'CDF Min',
+            data: fittedCdfMin.value,
+            borderColor: '#8B0000',
+            backgroundColor: '#8B0000',
+            borderWidth: 2,
+            fill: false,
+            pointRadius: 0,
+          },
+          {
+            type: 'line',
+            label: 'CDF Max',
+            data: fittedCdfMax.value,
+            borderColor: '#8B0000',
+            backgroundColor: '#8B0000',
+            borderWidth: 2,
+            fill: false,
+            pointRadius: 0,
+          },
+          {
+            type: 'line',
+            label: 'Predicted CDF',
+            data: predictedCdf.value,
+            borderColor: '#00FF00',
+            backgroundColor: '#00FF00',
+            borderWidth: 2,
+            fill: false,
+            pointRadius: 0,
+          },
+          ...(qualityProfileInput.testMode
+            ? [
+                {
+                  type: 'line',
+                  label: 'True CDF (test mode)',
+                  data: testModeCdf.value,
+                  borderColor: '#1E90FF',
+                  backgroundColor: '#1E90FF',
+                  borderWidth: 2,
+                  fill: false,
+                  pointRadius: 0,
+                },
+              ]
+            : []
+          ),
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              font: {
+                size: 12,
+              },
+              // filter: (legendItem, _) => {
+              //   return legendItem.datasetIndex !== 1 
+              //       && legendItem.datasetIndex !== 3;
+              // },
+            },
+          },
+          title: {
+            display: true,
+            text: 'Complementary CDF',
+            font: {
+              size: 14,
+            },
+          },
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            position: 'bottom',
+            title: {
+              display: true,
+              text: 'x',
+            },
+            min: 0,
+            max: 1,
+            ticks: {
+              stepSize: 0.1,
+            },
+            grid: {
+              color: '#5c5c5c',
+            },
+          },
+          y: {
+            title: {
+              display: true,
+              text: '1 - P(ξ ≤ x)',
+            },
+            min: 0,
+            max: 1,
+            ticks: {
+              stepSize: 0.1,
+            },
+            grid: {
+              color: '#5c5c5c',
+            },
+          },
+        },
+      },
+    });
+  }
+
 });
+
+watch(
+  [cdfMin, cdfMax, fittedCdfMin, fittedCdfMax, predictedCdf, testModeCdf],
+  ([newCdfMin, newCdfMax, newFittedCdfMin, newFittedCdfMax, newPredictedCdf, newTestModeCdf]) => {
+    if (cdfChart) {
+      cdfChart.data.datasets[0].data = newCdfMin;
+      cdfChart.data.datasets[1].data = newCdfMax;
+      cdfChart.data.datasets[2].data = newFittedCdfMin;
+      cdfChart.data.datasets[3].data = newFittedCdfMax;
+      cdfChart.data.datasets[4].data = newPredictedCdf;
+      if (qualityProfileInput.testMode) {
+        cdfChart.data.datasets[5].data = newTestModeCdf;
+      }
+      cdfChart.update();
+    }
+  }
+);
 
 onUnmounted(() => {
   sidebarStore.sidebarResults = false;
+  if (cdfChart) {
+    cdfChart.destroy();
+  }
 })
-
-// const chartsData = ref(null);
-//
-// const chartOptions = {
-//   chart: {
-//     height: 350,
-//     type: 'line',
-//     zoom: {
-//       enabled: false,
-//     },
-//   },
-//   xaxis: {
-//     categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
-//   },
-// };
-
-// const analyzeData = () => {
-//   if (!inputNumber.value) {
-//     alert('Please enter a valid number');
-//     return;
-//   }
-//
-//   chartsData.value = {
-//     chart1: [
-//       {
-//         name: 'Dataset 1',
-//         data: [34, 44, 54, 21, 12, 43, 25, 16, 50, 20],
-//       },
-//     ],
-//     chart2: [
-//       {
-//         name: 'Dataset 2',
-//         data: [20, 50, 70, 40, 30, 60, 80, 90, 60, 20],
-//       },
-//     ],
-//   };
-// };
 
 </script>
 
 <template>
-  <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-6">
 
+  <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-4">
 
-    <p>{{ qualityProfileResults.q}}</p>
-
+    <canvas ref="cdfChartRef" style="width: 500px; height: 500px;"></canvas>
 
   </div>
 
 
-  <!-- Chart Section (hidden until analyzed) -->
-  <!--    <div v-if="chartsData" class="mt-12">-->
-  <!--      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">-->
-  <!--        <div class="bg-background-secondary p-4 rounded-lg shadow-md">-->
-  <!--          <apexchart type="line" :options="chartOptions" :series="chartsData.chart1" />-->
-  <!--        </div>-->
-  <!--        <div class="bg-background-secondary p-4 rounded-lg shadow-md">-->
-  <!--          <apexchart type="bar" :options="chartOptions" :series="chartsData.chart2" />-->
-  <!--        </div>-->
-  <!--      </div>-->
-  <!--    </div>-->
 
-  <!--  <div>-->
-  <!--    <h1 class="text-2xl font-bold">Quantitative Quality Profile</h1>-->
-  <!--    <p>Evaluate quantitative quality metrics for your samples.</p>-->
-  <!--  </div>-->
-
-  <!--  <div>-->
-  <!--    <label for="numbers" class="block text-gray-700 font-bold mb-2">Enter Numbers:</label>-->
-  <!--    <textarea-->
-  <!--        id="numbers"-->
-  <!--        class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-500"-->
-  <!--        rows="5"-->
-  <!--        v-model="numbersInput"-->
-  <!--        placeholder="Enter float values separated by spaces, commas, or new lines"-->
-  <!--    ></textarea>-->
-  <!--    <div v-if="errorBatchVolume" class="text-red-500 text-sm mt-2">{{ errorBatchVolume }}</div>-->
-  <!--    <button-->
-  <!--        class="mt-4 px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600"-->
-  <!--        @click="processNumbers"-->
-  <!--    >-->
-  <!--      Submit-->
-  <!--    </button>-->
-  <!--    <div v-if="processedNumbers.length" class="mt-4">-->
-  <!--      <h3 class="text-gray-700 font-bold mb-2">Processed Numbers:</h3>-->
-  <!--      <p class="text-gray-600">{{ processedNumbers }}</p>-->
-  <!--    </div>-->
-  <!--  </div>-->
 
 </template>
 

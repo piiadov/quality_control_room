@@ -61,6 +61,21 @@ export const useQualityProfileResults = defineStore('quality-profile-results', {
     state: () => ({
         showResults: false,
         info: "",
-        q: []
+        scaledData: [],
+        cdfMin: [],
+        cdfMax: [],
+        q: [],
+        fittedCdfMin: [],
+        fittedCdfMax: [],
+        fittedPdfMin: [],
+        fittedPdfMax: [],
+        betaParamsMin: [0.0, 0.0],
+        betaParamsMax: [0.0, 0.0],
+        predictedBetaParams: [0.0, 0.0],
+        predictedCdf: [],
+        predictedPdf: [],
+        testModeBetaParams: [0.0, 0.0],
+        testModeCdf: [],
+        testModePdf: [],
     }),
 })

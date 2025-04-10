@@ -73,7 +73,6 @@ impl Default for Response {
 
 pub fn handle_about() -> Response {
     let version = env!("CARGO_PKG_VERSION");
-
     let mut response = Response::default();
     response.command = "About".to_string();
     response.info = format!("Quality analysis engine v{}", version);
@@ -81,7 +80,8 @@ pub fn handle_about() -> Response {
     response
 }
 
-pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64, mut max_value: f64, mut population_size: usize) -> Response {
+pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64,
+                   mut max_value: f64, mut population_size: usize) -> Response {
     let mut response = Response::default();
     response.command = "Calc using Beta-distribution".to_string();
 
@@ -99,8 +99,9 @@ pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64, mut 
         min_value = 0.0;
         max_value = 1.0;
         response.test_mode_beta_params = [a, b];
-        response.test_mode_cdf = beta_cdf(q.clone(), a, b);
-        response.test_mode_pdf = beta_pdf(q.clone(), a, b);
+        response.test_mode_cdf = beta_cdf(q.clone(), a, b)
+            .into_iter().map(|x| 1.0 - x).collect();
+        response.test_mode_pdf = beta_pdf(q.clone(), a, b)
     }
 
     response.population_size = population_size;
@@ -149,7 +150,10 @@ pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64, mut 
         return response;
     }
     let sample_size = scaled_data.len();
-    response.scaled_data = scaled_data.clone();
+    let mut sorted_scaled_data = scaled_data.clone();
+    sorted_scaled_data.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    //sorted_scaled_data.reverse();
+    response.scaled_data = sorted_scaled_data;
 
     // Get confidence intervals for CDF
     let (cdf_min, cdf_max) = conf_int(population_size, sample_size);
@@ -166,8 +170,10 @@ pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64, mut 
     response.beta_params_max = [fitted_params[2], fitted_params[3]];
 
     // Get fitted CDF and PDF
-    response.fitted_cdf_min = beta_cdf(q.clone(), fitted_params[0], fitted_params[1]);
-    response.fitted_cdf_max = beta_cdf(q.clone(), fitted_params[2], fitted_params[3]);
+    response.fitted_cdf_min = beta_cdf(q.clone(), fitted_params[0], fitted_params[1])
+        .into_iter().map(|x| 1.0 - x).collect();
+    response.fitted_cdf_max = beta_cdf(q.clone(), fitted_params[2], fitted_params[3])
+        .into_iter().map(|x| 1.0 - x).collect();
     response.fitted_pdf_min = beta_pdf(q.clone(), fitted_params[0], fitted_params[1]);
     response.fitted_pdf_max = beta_pdf(q.clone(), fitted_params[2], fitted_params[3]);
     
@@ -178,7 +184,8 @@ pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64, mut 
     response.predicted_beta_params = [pred[0] as f64, pred[1] as f64];
 
     // Get predicted CDF and PDF
-    response.predicted_cdf = beta_cdf(q.clone(), pred[0] as f64, pred[1] as f64);
+    response.predicted_cdf = beta_cdf(q.clone(), pred[0] as f64, pred[1] as f64)
+        .into_iter().map(|x| 1.0 - x).collect();
     response.predicted_pdf = beta_pdf(q.clone(), pred[0] as f64, pred[1] as f64);
     if test_mode {
         response.info = "Test mode".to_string();
