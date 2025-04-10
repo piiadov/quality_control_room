@@ -12,7 +12,7 @@
   "home": {
     "title": "Escolha a ferramenta",
     "defect-rate-btn": "Analisador de defeitos",
-    "beta-profile-btn": "Beta-Distribution Profiler",
+    "beta-profile-btn": "Beta(α, β) Profiler",
     "help-link": {
       "begin-text": "ou consulte",
       "link-text": "a documentação",

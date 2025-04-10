@@ -93,7 +93,7 @@ pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64,
     let folder_path = config.paths.data_folder;
 
     if test_mode {
-        let (a, b) = (3.0, 3.0);
+        let (a, b) = (5.0, 2.0);
         population_size = 3000;
         data = generate_beta_random_numbers(100, a, b);
         min_value = 0.0;

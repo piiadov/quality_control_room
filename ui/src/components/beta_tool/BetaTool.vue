@@ -3,6 +3,7 @@ import { onMounted } from 'vue';
 import { sidebarStore, betaResultsStore } from '../../store/index.js';
 import Inputs from './Inputs.vue';
 import Cdf from './Cdf.vue';
+import Pdf from './Pdf.vue';
 
 const sidebar = sidebarStore();
 const betaResults = betaResultsStore();
@@ -21,8 +22,6 @@ onMounted(() => {
   <main class="flex flex-1 justify-start gap-4 p-4">
     <Inputs />
     <Cdf v-if="betaResults.showResults"/>
+    <Pdf v-if="betaResults.showResults"/>
   </main>
 </template>
-
-<style scoped>
-</style>
