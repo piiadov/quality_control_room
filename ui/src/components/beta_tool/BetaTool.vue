@@ -23,6 +23,6 @@ onMounted(() => {
     <Inputs style="width: 500px; height: 500px;"/>
     <Cdf v-if="betaResults.showResults" style="width: 500px; height: 500px;"/>
     <Pdf v-if="betaResults.showResults" style="width: 500px; height: 500px;"/>
-    <Params v-if="betaResults.showResults" style="width: 500px; height: 500px;"/>
+    <Params v-if="betaResults.showResults" style="width: 500px; height: 300px;"/>
   </main>
 </template>

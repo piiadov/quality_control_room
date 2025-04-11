@@ -191,3 +191,11 @@ textarea::placeholder {
 .min-w-lg {
     min-width: 32rem;
 }
+
+.table-results {
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--background-secondary-color);
+    padding: 16px;
+    margin-top: 16px;
+}

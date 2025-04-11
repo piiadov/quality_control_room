@@ -84,7 +84,7 @@ const language = languageStore();
       <div class="flex items-center space-x-4">
         <!-- GitHub Link -->
         <a
-            href="https://github.com"
+            href="https://github.com/piiadov/quality_control_room"
             target="_blank"
             rel="noopener noreferrer"
             class="flex items-center space-x-2 hover:opacity-80 text-base"
