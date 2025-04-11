@@ -138,7 +138,7 @@ onMounted(() => {
           y: {
             title: {
               display: true,
-              text: 'rho(x)',
+              text: '\u03C1(x)',
             },
             ticks: {
               stepSize: 0.1,

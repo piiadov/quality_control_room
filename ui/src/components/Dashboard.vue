@@ -11,7 +11,7 @@ const sidebar = sidebarStore();
 <template>
   <div class="flex flex-grow">
     <!-- Toolbox -->
-    <aside class="w-64 p-4 bg-backgroundSecondary text-text">
+    <aside class="w-64 min-w-[16rem] p-4 bg-backgroundSecondary text-text">
       <div class="p-4 text-lg font-bold border-b border-border">
         {{ t('sidebar.tools') }}
       </div>

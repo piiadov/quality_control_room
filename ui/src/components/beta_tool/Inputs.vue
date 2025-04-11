@@ -188,7 +188,7 @@ const submitData = () => {
                 </router-link>
             </div>
             <textarea v-model="qualityProfileInputStore.samplingData" id="sampling-data" rows="4"
-                class="mt-2 w-full p-3 border border-border-color"
+                class="mt-2 w-full p-3 border border-border-color h-[12rem] rounded-lg"
                 placeholder="Enter numbers separated with new line, comma or space"></textarea>
         </div>
 
