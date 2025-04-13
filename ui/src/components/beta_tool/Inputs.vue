@@ -1,12 +1,13 @@
 <script setup>
 import WebSocketService from '../../services/websocketService.js'
 import { ref, computed } from 'vue';
-import { settingsStore, betaInputStore, betaResultsStore } from '../../store/index.js';
+import { settingsStore, betaInputStore, betaResultsStore, sidebarStore} from '../../store/index.js';
 import { QuestionMarkCircleIcon } from "@heroicons/vue/24/outline/index.js";
 
 const settings = settingsStore();
-const qualityProfileInputStore = betaInputStore();
-const qualityProfileResultsStore = betaResultsStore();
+const betaInput = betaInputStore();
+const betaResults = betaResultsStore();
+const sidebar = sidebarStore();
 
 const isDisabled = ref(false);
 const errorMessage = ref(null);
@@ -16,109 +17,110 @@ function stringToNumberArray(str) {
 }
 
 const batchVolumeInput = computed(() =>
-  !isNaN(qualityProfileInputStore.batchVolume) ? qualityProfileInputStore.batchVolume : ''
+  !isNaN(betaInput.batchVolume) ? betaInput.batchVolume : ''
 );
 
 const minValueInput = computed(() =>
-  !isNaN(qualityProfileInputStore.minValue) ? qualityProfileInputStore.minValue : ''
+  !isNaN(betaInput.minValue) ? betaInput.minValue : ''
 );
 
 const maxValueInput = computed(() =>
-  !isNaN(qualityProfileInputStore.maxValue) ? qualityProfileInputStore.maxValue : ''
+  !isNaN(betaInput.maxValue) ? betaInput.maxValue : ''
 );
 
 const submitData = () => {
   errorMessage.value = null;
 
-  const volume = parseInt(qualityProfileInputStore.batchVolume.toString(), 10);
-  if ((isNaN(volume) || volume < 1) && !qualityProfileInputStore.testMode) {
+  const volume = parseInt(betaInput.batchVolume.toString(), 10);
+  if ((isNaN(volume) || volume < 1) && !betaInput.testMode) {
     errorMessage.value = 'Dscretization: Please enter valid positive integer number';
-    qualityProfileResultsStore.showResults = false;
+    betaResults.showResults = false;
     return;
   } else {
-    qualityProfileInputStore.batchVolume = volume;
+    betaInput.batchVolume = volume;
   }
 
-  const minValue = parseFloat(qualityProfileInputStore.minValue.toString());
-  const maxValue = parseFloat(qualityProfileInputStore.maxValue.toString());
-  if ((isNaN(minValue) || isNaN(maxValue)) && !qualityProfileInputStore.testMode) {
+  const minValue = parseFloat(betaInput.minValue.toString());
+  const maxValue = parseFloat(betaInput.maxValue.toString());
+  if ((isNaN(minValue) || isNaN(maxValue)) && !betaInput.testMode) {
     errorMessage.value = 'Min or Max value: Please enter valid float number';
-    qualityProfileResultsStore.showResults = false;
+    betaResults.showResults = false;
     return;
   } else {
-    qualityProfileInputStore.minValue = minValue;
-    qualityProfileInputStore.maxValue = maxValue;
+    betaInput.minValue = minValue;
+    betaInput.maxValue = maxValue;
   }
 
-  if ((minValue >= maxValue) && !qualityProfileInputStore.testMode) {
+  if ((minValue >= maxValue) && !betaInput.testMode) {
     errorMessage.value = 'Min value must be less than max value';
-    qualityProfileResultsStore.showResults = false;
+    betaResults.showResults = false;
     return;
   }
 
-  const data = stringToNumberArray(qualityProfileInputStore.samplingData.toString());
-  if (data.length === 0 && !qualityProfileInputStore.testMode) {
+  const data = stringToNumberArray(betaInput.samplingData.toString());
+  if (data.length === 0 && !betaInput.testMode) {
     errorMessage.value = 'Sampling data: Please enter valid float numbers';
-    qualityProfileResultsStore.showResults = false;
+    betaResults.showResults = false;
     return;
   } else {
-    qualityProfileInputStore.samplingData = data;
+    betaInput.samplingData = data;
   }
 
-  if (volume < data.length && !qualityProfileInputStore.testMode) {
+  if (volume < data.length && !betaInput.testMode) {
     errorMessage.value = 'Batch volume or discretization factor must be greater than sampling size';
-    qualityProfileResultsStore.showResults = false;
+    betaResults.showResults = false;
     return;
   }
 
-  const areAllValuesInRange = data.every(value => value >= qualityProfileInputStore.minValue && value <= qualityProfileInputStore.maxValue);
-  if (!areAllValuesInRange && !qualityProfileInputStore.testMode) {
+  const areAllValuesInRange = data.every(value => value >= betaInput.minValue && value <= betaInput.maxValue);
+  if (!areAllValuesInRange && !betaInput.testMode) {
     errorMessage.value = 'Sampling data: All values must be within the specified range';
-    qualityProfileResultsStore.showResults = false;
+    betaResults.showResults = false;
     return;
   }
 
   isDisabled.value = true;
   const ws = new WebSocketService(settings.backendUrl, settings.connectTimeout);
-  ws.connectAndSendData('calc', qualityProfileInputStore)
+  ws.connectAndSendData('calc', betaInput)
     .then(response => {
       if (response.data.error > 0) {
         errorMessage.value = 'Backend error: ' + response.data.info;
         isDisabled.value = false;
-        qualityProfileResultsStore.showResults = false;
+        betaResults.showResults = false;
       } else {
         errorMessage.value = null;
         isDisabled.value = false;
 
-        qualityProfileInputStore.batchVolume = response.data.population_size;
-        qualityProfileInputStore.minValue = response.data.min_value;
-        qualityProfileInputStore.maxValue = response.data.max_value;
-        qualityProfileInputStore.samplingData = response.data.data;
+        betaInput.batchVolume = response.data.population_size;
+        betaInput.minValue = response.data.min_value;
+        betaInput.maxValue = response.data.max_value;
+        betaInput.samplingData = response.data.data;
 
-        qualityProfileResultsStore.info = response.data.info;
-        qualityProfileResultsStore.scaledData = response.data.scaled_data;
-        qualityProfileResultsStore.cdfMin = response.data.cdf_min;
-        qualityProfileResultsStore.cdfMax = response.data.cdf_max;
-        qualityProfileResultsStore.q = response.data.q;
-        qualityProfileResultsStore.fittedCdfMin = response.data.fitted_cdf_min;
-        qualityProfileResultsStore.fittedCdfMax = response.data.fitted_cdf_max;
-        qualityProfileResultsStore.fittedPdfMin = response.data.fitted_pdf_min;
-        qualityProfileResultsStore.fittedPdfMax = response.data.fitted_pdf_max;
-        qualityProfileResultsStore.betaParamsMin = response.data.beta_params_min;
-        qualityProfileResultsStore.betaParamsMax = response.data.beta_params_max;
-        qualityProfileResultsStore.predictedBetaParams = response.data.predicted_beta_params;
-        qualityProfileResultsStore.predictedCdf = response.data.predicted_cdf;
-        qualityProfileResultsStore.predictedPdf = response.data.predicted_pdf;
-        qualityProfileResultsStore.testModeBetaParams = response.data.test_mode_beta_params;
-        qualityProfileResultsStore.testModeCdf = response.data.test_mode_cdf;
-        qualityProfileResultsStore.testModePdf = response.data.test_mode_pdf;
-        qualityProfileResultsStore.showResults = true;
+        betaResults.info = response.data.info;
+        betaResults.scaledData = response.data.scaled_data;
+        betaResults.cdfMin = response.data.cdf_min;
+        betaResults.cdfMax = response.data.cdf_max;
+        betaResults.q = response.data.q;
+        betaResults.fittedCdfMin = response.data.fitted_cdf_min;
+        betaResults.fittedCdfMax = response.data.fitted_cdf_max;
+        betaResults.fittedPdfMin = response.data.fitted_pdf_min;
+        betaResults.fittedPdfMax = response.data.fitted_pdf_max;
+        betaResults.betaParamsMin = response.data.beta_params_min;
+        betaResults.betaParamsMax = response.data.beta_params_max;
+        betaResults.predictedBetaParams = response.data.predicted_beta_params;
+        betaResults.predictedCdf = response.data.predicted_cdf;
+        betaResults.predictedPdf = response.data.predicted_pdf;
+        betaResults.testModeBetaParams = response.data.test_mode_beta_params;
+        betaResults.testModeCdf = response.data.test_mode_cdf;
+        betaResults.testModePdf = response.data.test_mode_pdf;
+        betaResults.showResults = true;
+        sidebar.sidebarResults = true;
       }
     })
     .catch(error => {
       errorMessage.value = error.message;
       isDisabled.value = false;
-      qualityProfileResultsStore.showResults = false;
+      betaResults.showResults = false;
     });
 };
 
@@ -128,7 +130,7 @@ const submitData = () => {
     <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-4">
 
         <!-- Message if test mode -->
-        <div v-if="qualityProfileInputStore.testMode" class="h-2 info-message text-sm">
+        <div v-if="betaInput.testMode" class="h-2 info-message text-sm">
             Test mode
         </div>
 
@@ -187,7 +189,7 @@ const submitData = () => {
                     <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
                 </router-link>
             </div>
-            <textarea v-model="qualityProfileInputStore.samplingData" id="sampling-data" rows="4"
+            <textarea v-model="betaInput.samplingData" id="sampling-data" rows="4"
                 class="mt-2 w-full p-3 border border-border-color h-[12rem] rounded-lg"
                 placeholder="Enter numbers separated with new line, comma or space"></textarea>
         </div>

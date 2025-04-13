@@ -12,7 +12,8 @@
   "home": {
     "title": "Escolha a ferramenta",
     "defect-rate-btn": "Analisador de defeitos",
-    "beta-profile-btn": "Beta(α, β) Profiler",
+    "beta-profile-btn": "Beta(\u03B1, \u03B2) Profiler",
+    "normal-profile-btn": "Normal(\u03BC, \u03C3) Profiler",
     "help-link": {
       "begin-text": "ou consulte",
       "link-text": "a documentação",

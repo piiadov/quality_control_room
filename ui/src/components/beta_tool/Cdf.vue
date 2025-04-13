@@ -1,11 +1,10 @@
 <script setup>
 
 import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
-import { sidebarStore, betaInputStore, betaResultsStore }
+import { betaInputStore, betaResultsStore }
         from "../../store/index.js";
 import { Chart, registerables } from 'chart.js';
 
-const sidebar = sidebarStore();
 const betaResults = betaResultsStore();
 const betaInputs = betaInputStore();
 
@@ -59,8 +58,6 @@ if (betaInputs.testMode) {
 }
 
 onMounted(() => {
-  sidebar.sidebarResults = true;
-
   if (cdfChartRef.value) {
     cdfChart = new Chart(cdfChartRef.value, {
       type: 'scatter',
@@ -206,7 +203,6 @@ watch(
 );
 
 onUnmounted(() => {
-  sidebar.sidebarResults = false;
   if (cdfChart) {
     cdfChart.destroy();
   }

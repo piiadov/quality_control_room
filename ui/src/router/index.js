@@ -5,6 +5,7 @@ import About from '../views/About.vue';
 import Dashboard from '../components/Dashboard.vue';
 import DefectsRate from '../components/defects_rate/DefectsRate.vue';
 import BetaTool from "../components/beta_tool/BetaTool.vue";
+import NormalTool from "../components/normal_tool/NormalTool.vue";
 
 const routes = [
     { path: '/', component: Home },
@@ -14,7 +15,8 @@ const routes = [
         component: Dashboard,
         children: [
             { path: 'defects-rate', component: DefectsRate },
-            { path: 'beta-profile', component: BetaTool},
+            { path: 'beta-profile', component: BetaTool },
+            { path: 'normal-profile', component: NormalTool },
         ],
     },
 ];

@@ -1,8 +1,9 @@
 <script setup>
 import { useI18n, } from 'vue-i18n';
 import { sidebarStore } from '../store/index';
-import BetaSidebarResults from './beta_tool/SidebarResults.vue';
 import DefectsRateSidebarResults from './defects_rate/SidebarResults.vue';
+import BetaSidebarResults from './beta_tool/SidebarResults.vue';
+import NormalSidebarResults from './normal_tool/SidebarResults.vue';
 
 const { t } = useI18n();
 const sidebar = sidebarStore();
@@ -30,12 +31,21 @@ const sidebar = sidebarStore();
             {{ t('home.beta-profile-btn') }}
           </button>
         </router-link>
+
+        <router-link to="/tools/normal-profile">
+          <button class="secondary-button mb-4 min-w-full"
+                  :class="[sidebar.activeTool === 'NormalProfile'? 'active-tool': '']">
+            {{ t('home.normal-profile-btn') }}
+          </button>
+        </router-link>
       </div>
 
-      <BetaSidebarResults
-          v-if="sidebar.activeTool === 'BetaProfile' && sidebar.sidebarResults" />
       <DefectsRateSidebarResults
           v-if="sidebar.activeTool === 'DefectsRate' && sidebar.sidebarResults" />
+      <BetaSidebarResults
+          v-if="sidebar.activeTool === 'BetaProfile' && sidebar.sidebarResults" />
+      <NormalSidebarResults
+          v-if="sidebar.activeTool === 'NormalProfile' && sidebar.sidebarResults" />
     </aside>
 
     <div class="flex-1 p-6">

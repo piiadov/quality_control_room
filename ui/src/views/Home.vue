@@ -15,6 +15,9 @@ const { t } = useI18n();
       <router-link to="/tools/beta-profile">
         <button class="primary-button">{{ t('home.beta-profile-btn') }}</button>
       </router-link>
+      <router-link to="/tools/normal-profile">
+        <button class="primary-button">{{ t('home.normal-profile-btn') }}</button>
+      </router-link>
     </div>
 
     <div class="m-4 text-mutedText space-x-4">

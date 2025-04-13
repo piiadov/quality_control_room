@@ -1,11 +1,9 @@
 <script setup>
 
 import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
-import { sidebarStore, betaInputStore, betaResultsStore }
-        from "../../store/index.js";
+import {betaInputStore, betaResultsStore } from "../../store/index.js";
 import { Chart, registerables } from 'chart.js';
 
-const sidebar = sidebarStore();
 const betaResults = betaResultsStore();
 const betaInputs = betaInputStore();
 
@@ -45,8 +43,6 @@ if (betaInputs.testMode) {
 }
 
 onMounted(() => {
-  sidebar.sidebarResults = true;
-
   if (pdfChartRef.value) {
     pdfChart = new Chart(pdfChartRef.value, {
       type: 'scatter',
@@ -170,7 +166,6 @@ watch(
 );
 
 onUnmounted(() => {
-  sidebar.sidebarResults = false;
   if (pdfChart) {
     pdfChart.destroy();
   }

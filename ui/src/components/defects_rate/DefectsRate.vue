@@ -1,12 +1,21 @@
 <script setup>
-import { onMounted } from 'vue';
-import { sidebarStore } from '../../store/index.js';
+import { onMounted, onUnmounted } from 'vue';
+import { sidebarStore, defectsResultsStore } from '../../store/index.js';
 
+const defectsResults = defectsResultsStore();
 const sidebar = sidebarStore();
 
 onMounted(() => {
   sidebar.activeTool = "DefectsRate";
+  if (defectsResults.showResults === true) {
+    sidebar.sidebarResults = true;
+  }
 });
+
+onUnmounted(() => {
+  sidebar.sidebarResults = false;
+});
+
 
 </script>
 
@@ -16,6 +25,3 @@ onMounted(() => {
     <p>Analyze defect rates efficiently.</p>
   </div>
 </template>
-
-<style scoped>
-</style>
