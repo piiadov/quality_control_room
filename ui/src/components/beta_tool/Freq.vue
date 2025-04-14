@@ -1,4 +1,5 @@
 <script setup>
+  import { onMounted, onUnmounted, computed, watch } from "vue";
   import { betaResultsStore } from "../../store/index.js";
   import { Chart, registerables } from 'chart.js';
   import {ref} from "vue";
@@ -9,7 +10,9 @@
   const freqRef = ref(null);
   let freqChart = null;
 
-  import { onMounted, onUnmounted, watch } from "vue";
+  const binsNumber = computed(() => {
+    return betaResults.bins.length - 1;
+  });
 
   const createHistogram = () => {
     freqChart = new Chart(freqRef.value, {
@@ -75,6 +78,21 @@
 
 <template>
   <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-4">
-    <canvas ref="freqRef" style="width: 500px; height: 500px"></canvas>
+    <div class="flex items-center space-x-4">
+      <label for="binsNumber" class="label-text">Number of Bins:</label>
+      <input
+        id="binsNumber"
+        type="text"
+        v-model="binsNumber"
+        class="w-20"
+      />
+      <button
+        class="btn btn-primary"
+        @click="alert"
+      >
+      Update
+      </button>
+    </div>
+    <canvas ref="freqRef" style="width: 500px; height: 300px"></canvas>
   </div>
 </template>

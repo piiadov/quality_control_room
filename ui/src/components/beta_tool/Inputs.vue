@@ -144,36 +144,36 @@ const submitData = () => {
             <!-- Batch volume/discretization -->
             <div class="flex-1">
                 <div class="flex items-center justify-between space-x-2">
-                    <label for="batch-volume" class="block text-lg text-text">Discretization</label>
+                    <label for="batch-volume" class="label-text">Discretization</label>
                     <router-link to="/about">
                         <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
                     </router-link>
                 </div>
-                <input v-model="batchVolumeInput" type="text" id="batch-volume" class="mt-2 w-full p-3"
+                <input v-model="batchVolumeInput" type="text" id="batch-volume" class="mt-2 w-full input-text"
                     placeholder="Enter an integer" />
             </div>
 
             <!-- Min Value -->
             <div class="flex-1">
                 <div class="flex items-center justify-between space-x-2">
-                    <label for="min-value" class="block text-lg text-text">Min Value</label>
+                    <label for="min-value" class="label-text">Min Value</label>
                     <router-link to="/about">
                         <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
                     </router-link>
                 </div>
-                <input v-model="minValueInput" type="text" id="min-value" class="mt-2 w-full p-3"
+                <input v-model="minValueInput" type="text" id="min-value" class="mt-2 w-full input-text"
                     placeholder="Enter a value" />
             </div>
 
             <!-- Max Value -->
             <div class="flex-1">
                 <div class="flex items-center justify-between space-x-2">
-                    <label for="max-value" class="block text-lg text-text">Max Value</label>
+                    <label for="max-value" class="label-text">Max Value</label>
                     <router-link to="/about">
                         <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
                     </router-link>
                 </div>
-                <input v-model="maxValueInput" type="text" id="max-value" class="mt-2 w-full p-3"
+                <input v-model="maxValueInput" type="text" id="max-value" class="mt-2 w-full input-text"
                     placeholder="Enter a value" />
             </div>
         </div>
@@ -181,9 +181,9 @@ const submitData = () => {
         <div>
             <!-- Sampling data -->
             <div class="flex items-center justify-between space-x-2">
-                <label for="sampling-data" class="block text-lg text-text">
+                <label for="sampling-data" class="label-text">
                     Sampling Data
-                    <span class="w-auto muted-link text-xs">
+                    <span class="w-auto muted-link text-xs p-4">
                         load from file
                     </span>
                 </label>
@@ -192,7 +192,7 @@ const submitData = () => {
                 </router-link>
             </div>
             <textarea v-model="betaInput.samplingData" id="sampling-data" rows="4"
-                class="mt-2 w-full p-3 border border-border-color h-[12rem] rounded-lg"
+                class="mt-2 w-full h-[12rem] input-text"
                 placeholder="Enter numbers separated with new line, comma or space"></textarea>
         </div>
 
