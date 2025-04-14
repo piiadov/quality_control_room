@@ -12,6 +12,7 @@ pub struct ApiRequest {
     pub min_value: Option<f64>,
     pub max_value: Option<f64>,
     pub population_size: Option<usize>,
+    pub bins_number: Option<usize>,
 }
 
 #[derive(Serialize, Debug)]
@@ -39,6 +40,12 @@ pub struct Response {
     test_mode_beta_params: [f64; 2],
     test_mode_cdf: Vec<f64>,
     test_mode_pdf: Vec<f64>,
+    bins: Vec<f64>,
+    freq: Vec<f64>,
+    freq_min: Vec<f64>,
+    freq_max: Vec<f64>,
+    freq_pred: Vec<f64>,
+    test_mode_freq: Vec<f64>,
 }
 
 impl Default for Response {
@@ -67,6 +74,12 @@ impl Default for Response {
             test_mode_beta_params: [0.0;2],
             test_mode_cdf: vec![],
             test_mode_pdf: vec![],
+            bins: vec![],
+            freq: vec![],
+            freq_min: vec![],
+            freq_max: vec![],
+            freq_pred: vec![],
+            test_mode_freq: vec![],
         }
     }
 }
@@ -81,7 +94,7 @@ pub fn handle_about() -> Response {
 }
 
 pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64,
-                   mut max_value: f64, mut population_size: usize) -> Response {
+                   mut max_value: f64, mut population_size: usize, bins_number: usize) -> Response {
     let mut response = Response::default();
     response.command = "Calc using Beta-distribution".to_string();
 
@@ -190,9 +203,23 @@ pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64,
     if test_mode {
         response.info = "Test mode".to_string();
     }
+
+    // Bins and sampling frequencies
+    let bins = generate_range([0.0, 1.0], bins_number + 1);
+    response.bins = bins.clone();
+    response.freq = frequencies(&bins, &scaled_data);
+
+    // response.freq_min = frequencies(&bins, &generate_beta_random_numbers(
+    //     scaled_data.len(), response.beta_params_min[0], response.beta_params_min[1]));
+    // response.freq_max = frequencies(&bins, &generate_beta_random_numbers(
+    //     scaled_data.len(), response.beta_params_max[0], response.beta_params_max[1]));
+    // response.freq_pred = frequencies(&bins, &generate_beta_random_numbers(
+    //     scaled_data.len(), response.predicted_beta_params[0], response.predicted_beta_params[1]));
+    // if test_mode {
+    //     response.test_mode_freq = frequencies(&bins, &generate_beta_random_numbers(
+    //         scaled_data.len(), response.test_mode_beta_params[0], response.test_mode_beta_params[1]));
+    // }
+
     response.error = 0;
-    // println!("beta_params_min: {:?}", response.beta_params_min);
-    // println!("beta_params_max: {:?}", response.beta_params_max);
-    // println!("predicted_beta_params: {:?}", response.predicted_beta_params);
     response
 }

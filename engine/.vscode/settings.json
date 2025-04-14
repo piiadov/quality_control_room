@@ -1,0 +1,5 @@
+{
+    "terminal.integrated.env.linux": {
+        "LD_LIBRARY_PATH": "$LD_LIBRARY_PATH:/home/vp/GitHub/quality_control_room/lib"
+    }
+}

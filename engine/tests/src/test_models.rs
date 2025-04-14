@@ -1,5 +1,5 @@
 use models::wrapper::*;
-use models::train::{conf_int, generate_range, quality_interval};
+use models::train::{conf_int, generate_range, quality_interval, frequencies};
 use csv::{ReaderBuilder, Trim};
 use std::fs::File;
 use std::path::Path;
@@ -209,4 +209,14 @@ fn test_cdf_comparison() {
         .map(|(a, b)| a - b)
         .collect();
     println!("Differences between cdf_max_1 and cdf_max_2: {:?}", differences);
+}
+
+#[test]
+fn test_freq() {
+    let data = vec![0.0, 0.1, 0.2, 0.3, 0.35, 0.5, 0.7, 0.9, 1.0];
+    let bins = vec![0.0, 0.2, 0.4, 0.6, 0.8, 1.0];
+    let frequencies = frequencies(&bins, &data);
+    println!("Bins: {:?}", bins);
+    println!("Data: {:?}", data);
+    println!("Frequencies: {:.2?}", frequencies);
 }

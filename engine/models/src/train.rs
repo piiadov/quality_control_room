@@ -253,3 +253,18 @@ pub fn generate_beta_random_numbers(n: usize, alpha: f64, beta: f64) -> Vec<f64>
     let mut rng = rng();
     (0..n).map(|_| beta.sample(&mut rng)).collect()
 }
+
+pub fn frequencies(bins: &Vec<f64>, data: &Vec<f64>) -> Vec<f64> {
+    assert!(bins.len() > 1, "Bins must have at least two elements");
+    let mut freq = vec![0.0; bins.len() - 1];
+    for &value in data {
+        if let Some(pos) = bins.iter().position(|&bin| bin > value) {
+            if pos > 0 {
+            freq[pos - 1] += 1.0 / data.len() as f64;
+            }
+        } else if (value - bins[bins.len() - 1]).abs() < f64::EPSILON {
+            freq[bins.len() - 2] += 1.0 / data.len() as f64;
+        }
+    }
+    freq
+}

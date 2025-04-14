@@ -30,6 +30,7 @@ async fn handle_socket(websocket: ws::WebSocket) {
                                 request.min_value.unwrap_or(f64::NAN),
                                 request.max_value.unwrap_or(f64::NAN),
                                 request.population_size.unwrap_or(0),
+                                request.bins_number.unwrap_or(10)
                             );
                             let response_json =
                                     serde_json::to_string(&response).unwrap_or("{}".to_string());

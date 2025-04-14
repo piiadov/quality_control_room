@@ -53,7 +53,8 @@ export const betaInputStore = defineStore('beta-profile-input', {
         batchVolume: NaN,
         samplingData: [],
         minValue: NaN,
-        maxValue: NaN
+        maxValue: NaN,
+        binsNumber: NaN,
     }),
 })
 
@@ -77,6 +78,8 @@ export const betaResultsStore = defineStore('beta-profile-results', {
         testModeBetaParams: [0.0, 0.0],
         testModeCdf: [],
         testModePdf: [],
+        bins:[],
+        freq: [],
     }),
 })
 

@@ -113,6 +113,8 @@ const submitData = () => {
         betaResults.testModeBetaParams = response.data.test_mode_beta_params;
         betaResults.testModeCdf = response.data.test_mode_cdf;
         betaResults.testModePdf = response.data.test_mode_pdf;
+        betaResults.bins = response.data.bins;
+        betaResults.freq = response.data.freq;
         betaResults.showResults = true;
         sidebar.sidebarResults = true;
       }
