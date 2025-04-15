@@ -1,8 +1,7 @@
 <script setup>
-import {betaResultsStore, betaInputStore} from "../../store/index.js";
+import {betaStore} from "../../store/index.js";
 
-const betaInputs = betaInputStore();
-const betaResults = betaResultsStore();
+const beta = betaStore();
 </script>
 
 <template>
@@ -28,10 +27,10 @@ const betaResults = betaResultsStore();
             Minimum Quality
           </td>
           <td class="border p-2 text-center">
-            {{ betaResults.betaParamsMin[0].toFixed(1) }}
+            {{ beta.betaParamsMin[0].toFixed(1) }}
           </td>
           <td class="border p-2 text-center">
-            {{ betaResults.betaParamsMin[1].toFixed(1) }}
+            {{ beta.betaParamsMin[1].toFixed(1) }}
           </td>
         </tr>
         <tr>
@@ -39,10 +38,10 @@ const betaResults = betaResultsStore();
             Maximum Quality
           </td>
           <td class="border p-2 text-center">
-            {{ betaResults.betaParamsMax[0].toFixed(1) }}
+            {{ beta.betaParamsMax[0].toFixed(1) }}
           </td>
           <td class="border p-2 text-center">
-            {{ betaResults.betaParamsMax[1].toFixed(1) }}
+            {{ beta.betaParamsMax[1].toFixed(1) }}
           </td>
         </tr>
         <tr>
@@ -50,21 +49,21 @@ const betaResults = betaResultsStore();
             Predicted Quality
           </td>
           <td class="border p-2 text-center">
-            {{ betaResults.predictedBetaParams[0].toFixed(1) }}
+            {{ beta.predictedBetaParams[0].toFixed(1) }}
           </td>
           <td class="border p-2 text-center">
-            {{ betaResults.predictedBetaParams[1].toFixed(1) }}
+            {{ beta.predictedBetaParams[1].toFixed(1) }}
           </td>
         </tr>
-        <tr v-if="betaInputs.testMode === true">
+        <tr v-if="beta.testMode === true">
           <td class="border p-2 text-left">
             True Quality (test mode)
           </td>
           <td class="border p-2 text-center">
-            {{ betaResults.testModeBetaParams[0].toFixed(1) }}
+            {{ beta.testModeBetaParams[0].toFixed(1) }}
           </td>
           <td class="border p-2 text-center">
-            {{ betaResults.testModeBetaParams[1].toFixed(1) }}
+            {{ beta.testModeBetaParams[1].toFixed(1) }}
           </td>
         </tr>
       </tbody>

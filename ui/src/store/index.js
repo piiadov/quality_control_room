@@ -47,19 +47,15 @@ export const settingsStore = defineStore('settings', {
     }),
 })
 
-export const betaInputStore = defineStore('beta-profile-input', {
-    state: () => ({        
+export const betaStore = defineStore('beta', {
+    state: () => ({
         testMode: true,
+        inputDisabled: false,
         batchVolume: NaN,
         samplingData: [],
         minValue: NaN,
         maxValue: NaN,
         binsNumber: NaN,
-    }),
-})
-
-export const betaResultsStore = defineStore('beta-profile-results', {
-    state: () => ({
         showResults: false,
         info: "",
         scaledData: [],
@@ -83,26 +79,16 @@ export const betaResultsStore = defineStore('beta-profile-results', {
     }),
 })
 
-export const defectsInputStore = defineStore('defects-rate-input', {
+export const defectsStore = defineStore('defects', {
     state: () => ({        
         testMode: true,
-    }),
-})
-
-export const defectsResultsStore = defineStore('defects-rate-results', {
-    state: () => ({
         showResults: false,
     }),
 })
 
-export const normalInputStore = defineStore('normal-profile-input', {
+export const normalStore = defineStore('normal', {
     state: () => ({        
         testMode: true,
-    }),
-})
-
-export const normalResultsStore = defineStore('normal-profile-results', {
-    state: () => ({
         showResults: false,
     }),
 })

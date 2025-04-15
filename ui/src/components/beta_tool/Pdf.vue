@@ -1,43 +1,42 @@
 <script setup>
 
 import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
-import {betaInputStore, betaResultsStore } from "../../store/index.js";
+import { betaStore } from "../../store/index.js";
 import { Chart, registerables } from 'chart.js';
 
-const betaResults = betaResultsStore();
-const betaInputs = betaInputStore();
+const beta = betaStore();
 
 Chart.register(...registerables);
 const pdfChartRef = ref(null);
 let pdfChart = null;
 
 const fittedPdfMin = computed(() =>
-  betaResults.q.map((x, i) => ({
+  beta.q.map((x, i) => ({
     x: x,
-    y: betaResults.fittedPdfMin[i],
+    y: beta.fittedPdfMin[i],
   }))
 );
 
 const fittedPdfMax = computed(() =>
-  betaResults.q.map((x, i) => ({
+  beta.q.map((x, i) => ({
     x: x,
-    y: betaResults.fittedPdfMax[i],
+    y: beta.fittedPdfMax[i],
   }))
 );
 
 const predictedPdf = computed(() =>
-  betaResults.q.map((x, i) => ({
+  beta.q.map((x, i) => ({
     x: x,
-    y: betaResults.predictedPdf[i],
+    y: beta.predictedPdf[i],
   }))
 );
 
 let testModePdf = null;
-if (betaInputs.testMode) {
+if (beta.testMode) {
   testModePdf = computed(() =>
-    betaResults.q.map((x, i) => ({
+    beta.q.map((x, i) => ({
       x: x,
-      y: betaResults.testModePdf[i],
+      y: beta.testModePdf[i],
     }))
   );
 }
@@ -77,7 +76,7 @@ const createChart = () => {
           fill: false,
           pointRadius: 0,
         },
-        ...(betaInputs.testMode
+        ...(beta.testMode
           ? [
               {
                 type: 'line',
@@ -171,7 +170,7 @@ watch(
       pdfChart.data.datasets[0].data = fittedPdfMin.value;
       pdfChart.data.datasets[1].data = fittedPdfMax.value;
       pdfChart.data.datasets[2].data = predictedPdf.value;
-      if (betaInputs.testMode) {
+      if (beta.testMode) {
         pdfChart.data.datasets[3].data = testModePdf.value;
       }
       pdfChart.update();

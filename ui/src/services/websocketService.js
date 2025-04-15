@@ -23,16 +23,17 @@ class WebSocketService {
         });
     }
 
-    sendCommand(command, storage) {
+    sendCommand(command, store) {
         return new Promise((resolve, reject) => {
             const message = {
                 // Structure matched with the backend
                 command: command,
-                test_mode: storage.testMode,
-                population_size: storage.batchVolume,
-                min_value: storage.minValue,
-                max_value: storage.maxValue,
-                data: storage.samplingData,
+                test_mode: store.testMode,
+                population_size: store.batchVolume,
+                min_value: store.minValue,
+                max_value: store.maxValue,
+                data: store.samplingData,
+                bins_number: store.binsNumber,
             };
             // alert("Sending command: " + JSON.stringify(message));
             

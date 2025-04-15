@@ -1,15 +1,13 @@
 <script setup>
 import WebSocketService from '../../services/websocketService.js'
 import { ref, computed } from 'vue';
-import { settingsStore, betaInputStore, betaResultsStore, sidebarStore} from '../../store/index.js';
+import { settingsStore, betaStore, sidebarStore} from '../../store/index.js';
 import { QuestionMarkCircleIcon } from "@heroicons/vue/24/outline/index.js";
 
 const settings = settingsStore();
-const betaInput = betaInputStore();
-const betaResults = betaResultsStore();
+const beta = betaStore();
 const sidebar = sidebarStore();
 
-const isDisabled = ref(false);
 const errorMessage = ref(null);
 
 function stringToNumberArray(str) {
@@ -17,112 +15,112 @@ function stringToNumberArray(str) {
 }
 
 const batchVolumeInput = computed(() =>
-  !isNaN(betaInput.batchVolume) ? betaInput.batchVolume : ''
+  !isNaN(beta.batchVolume) ? beta.batchVolume : ''
 );
 
 const minValueInput = computed(() =>
-  !isNaN(betaInput.minValue) ? betaInput.minValue : ''
+  !isNaN(beta.minValue) ? beta.minValue : ''
 );
 
 const maxValueInput = computed(() =>
-  !isNaN(betaInput.maxValue) ? betaInput.maxValue : ''
+  !isNaN(beta.maxValue) ? beta.maxValue : ''
 );
 
 const submitData = () => {
   errorMessage.value = null;
 
-  const volume = parseInt(betaInput.batchVolume.toString(), 10);
-  if ((isNaN(volume) || volume < 1) && !betaInput.testMode) {
+  const volume = parseInt(beta.batchVolume.toString(), 10);
+  if ((isNaN(volume) || volume < 1) && !beta.testMode) {
     errorMessage.value = 'Dscretization: Please enter valid positive integer number';
-    betaResults.showResults = false;
+    beta.showResults = false;
     return;
   } else {
-    betaInput.batchVolume = volume;
+    beta.batchVolume = volume;
   }
 
-  const minValue = parseFloat(betaInput.minValue.toString());
-  const maxValue = parseFloat(betaInput.maxValue.toString());
-  if ((isNaN(minValue) || isNaN(maxValue)) && !betaInput.testMode) {
+  const minValue = parseFloat(beta.minValue.toString());
+  const maxValue = parseFloat(beta.maxValue.toString());
+  if ((isNaN(minValue) || isNaN(maxValue)) && !beta.testMode) {
     errorMessage.value = 'Min or Max value: Please enter valid float number';
-    betaResults.showResults = false;
+    beta.showResults = false;
     return;
   } else {
-    betaInput.minValue = minValue;
-    betaInput.maxValue = maxValue;
+    beta.minValue = minValue;
+    beta.maxValue = maxValue;
   }
 
-  if ((minValue >= maxValue) && !betaInput.testMode) {
+  if ((minValue >= maxValue) && !beta.testMode) {
     errorMessage.value = 'Min value must be less than max value';
-    betaResults.showResults = false;
+    beta.showResults = false;
     return;
   }
 
-  const data = stringToNumberArray(betaInput.samplingData.toString());
-  if (data.length === 0 && !betaInput.testMode) {
+  const data = stringToNumberArray(beta.samplingData.toString());
+  if (data.length === 0 && !beta.testMode) {
     errorMessage.value = 'Sampling data: Please enter valid float numbers';
-    betaResults.showResults = false;
+    beta.showResults = false;
     return;
   } else {
-    betaInput.samplingData = data;
+    beta.samplingData = data;
   }
 
-  if (volume < data.length && !betaInput.testMode) {
+  if (volume < data.length && !beta.testMode) {
     errorMessage.value = 'Batch volume or discretization factor must be greater than sampling size';
-    betaResults.showResults = false;
+    beta.showResults = false;
     return;
   }
 
-  const areAllValuesInRange = data.every(value => value >= betaInput.minValue && value <= betaInput.maxValue);
-  if (!areAllValuesInRange && !betaInput.testMode) {
+  const areAllValuesInRange = data.every(value => value >= beta.minValue && value <= beta.maxValue);
+  if (!areAllValuesInRange && !beta.testMode) {
     errorMessage.value = 'Sampling data: All values must be within the specified range';
-    betaResults.showResults = false;
+    beta.showResults = false;
     return;
   }
 
-  isDisabled.value = true;
+  beta.inputDisabled = true;
   const ws = new WebSocketService(settings.backendUrl, settings.connectTimeout);
-  ws.connectAndSendData('calc', betaInput)
+  ws.connectAndSendData('calc', beta)
     .then(response => {
       if (response.data.error > 0) {
         errorMessage.value = 'Backend error: ' + response.data.info;
-        isDisabled.value = false;
-        betaResults.showResults = false;
+        beta.inputDisabled = false;
+        beta.showResults = false;
       } else {
         errorMessage.value = null;
-        isDisabled.value = false;
+        beta.inputDisabled = false;
 
-        betaInput.batchVolume = response.data.population_size;
-        betaInput.minValue = response.data.min_value;
-        betaInput.maxValue = response.data.max_value;
-        betaInput.samplingData = response.data.data;
+        beta.batchVolume = response.data.population_size;
+        beta.minValue = response.data.min_value;
+        beta.maxValue = response.data.max_value;
+        beta.samplingData = response.data.data;
 
-        betaResults.info = response.data.info;
-        betaResults.scaledData = response.data.scaled_data;
-        betaResults.cdfMin = response.data.cdf_min;
-        betaResults.cdfMax = response.data.cdf_max;
-        betaResults.q = response.data.q;
-        betaResults.fittedCdfMin = response.data.fitted_cdf_min;
-        betaResults.fittedCdfMax = response.data.fitted_cdf_max;
-        betaResults.fittedPdfMin = response.data.fitted_pdf_min;
-        betaResults.fittedPdfMax = response.data.fitted_pdf_max;
-        betaResults.betaParamsMin = response.data.beta_params_min;
-        betaResults.betaParamsMax = response.data.beta_params_max;
-        betaResults.predictedBetaParams = response.data.predicted_beta_params;
-        betaResults.predictedCdf = response.data.predicted_cdf;
-        betaResults.predictedPdf = response.data.predicted_pdf;
-        betaResults.testModeBetaParams = response.data.test_mode_beta_params;
-        betaResults.testModeCdf = response.data.test_mode_cdf;
-        betaResults.testModePdf = response.data.test_mode_pdf;
-        betaResults.bins = response.data.bins;
-        betaResults.freq = response.data.freq;
-        betaResults.showResults = true;
+        beta.info = response.data.info;
+        beta.scaledData = response.data.scaled_data;
+        beta.cdfMin = response.data.cdf_min;
+        beta.cdfMax = response.data.cdf_max;
+        beta.q = response.data.q;
+        beta.fittedCdfMin = response.data.fitted_cdf_min;
+        beta.fittedCdfMax = response.data.fitted_cdf_max;
+        beta.fittedPdfMin = response.data.fitted_pdf_min;
+        beta.fittedPdfMax = response.data.fitted_pdf_max;
+        beta.betaParamsMin = response.data.beta_params_min;
+        beta.betaParamsMax = response.data.beta_params_max;
+        beta.predictedBetaParams = response.data.predicted_beta_params;
+        beta.predictedCdf = response.data.predicted_cdf;
+        beta.predictedPdf = response.data.predicted_pdf;
+        beta.testModeBetaParams = response.data.test_mode_beta_params;
+        beta.testModeCdf = response.data.test_mode_cdf;
+        beta.testModePdf = response.data.test_mode_pdf;
+        beta.bins = response.data.bins;
+        beta.freq = response.data.freq;
+        beta.showResults = true;
         sidebar.sidebarResults = true;
       }
     })
     .catch(error => {
       errorMessage.value = error.message;
-      isDisabled.value = false;
-      betaResults.showResults = false;
+      beta.inputDisabled = false;
+      beta.showResults = false;
     });
 };
 
@@ -130,77 +128,82 @@ const submitData = () => {
 
 <template>
     <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-4">
+      <!-- Message if test mode -->
+      <div v-if="beta.testMode" class="h-2 info-message text-sm">
+          Test mode
+      </div>
 
-        <!-- Message if test mode -->
-        <div v-if="betaInput.testMode" class="h-2 info-message text-sm">
-            Test mode
-        </div>
-
-        <!--Error message-->
-        <div v-if="errorMessage" class="error-message text-sm h-4">{{ errorMessage }}</div>
+      <!--Error message-->
+      <div v-if="errorMessage" class="error-message text-sm h-4">
+        {{ errorMessage }}
+      </div>
 
         <!-- Discretization and Min/Max values -->
-        <div class="flex space-x-4">
-            <!-- Batch volume/discretization -->
-            <div class="flex-1">
-                <div class="flex items-center justify-between space-x-2">
-                    <label for="batch-volume" class="label-text">Discretization</label>
-                    <router-link to="/about">
-                        <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
-                    </router-link>
-                </div>
-                <input v-model="batchVolumeInput" type="text" id="batch-volume" class="mt-2 w-full input-text"
-                    placeholder="Enter an integer" />
-            </div>
-
-            <!-- Min Value -->
-            <div class="flex-1">
-                <div class="flex items-center justify-between space-x-2">
-                    <label for="min-value" class="label-text">Min Value</label>
-                    <router-link to="/about">
-                        <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
-                    </router-link>
-                </div>
-                <input v-model="minValueInput" type="text" id="min-value" class="mt-2 w-full input-text"
-                    placeholder="Enter a value" />
-            </div>
-
-            <!-- Max Value -->
-            <div class="flex-1">
-                <div class="flex items-center justify-between space-x-2">
-                    <label for="max-value" class="label-text">Max Value</label>
-                    <router-link to="/about">
-                        <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
-                    </router-link>
-                </div>
-                <input v-model="maxValueInput" type="text" id="max-value" class="mt-2 w-full input-text"
-                    placeholder="Enter a value" />
-            </div>
+      <div class="flex space-x-4">
+        <!-- Batch volume/discretization -->
+        <div class="flex-1">
+          <div class="flex items-center justify-between space-x-2">
+            <label for="batch-volume" class="label-text">Discretization</label>
+            <router-link to="/about">
+              <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
+            </router-link>
+          </div>
+          <input v-model="batchVolumeInput" type="text" id="batch-volume" class="mt-2 w-full input-text"
+              placeholder="Enter an integer" :disabled="beta.inputDisabled" />
         </div>
 
-        <div>
-            <!-- Sampling data -->
-            <div class="flex items-center justify-between space-x-2">
-                <label for="sampling-data" class="label-text">
-                    Sampling Data
-                    <span class="w-auto muted-link text-xs p-4">
-                        load from file
-                    </span>
-                </label>
-                <router-link to="/about">
-                    <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
-                </router-link>
-            </div>
-            <textarea v-model="betaInput.samplingData" id="sampling-data" rows="4"
-                class="mt-2 w-full h-[12rem] input-text"
-                placeholder="Enter numbers separated with new line, comma or space"></textarea>
+        <!-- Min Value -->
+        <div class="flex-1">
+          <div class="flex items-center justify-between space-x-2">
+            <label for="min-value" class="label-text">Min Value</label>
+            <router-link to="/about">
+              <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
+            </router-link>
+          </div>
+          <input v-model="minValueInput" type="text" id="min-value" class="mt-2 w-full input-text"
+                 placeholder="Enter a value" :disabled="beta.inputDisabled" />
         </div>
+
+        <!-- Max Value -->
+        <div class="flex-1">
+          <div class="flex items-center justify-between space-x-2">
+            <label for="max-value" class="label-text">Max Value</label>
+            <router-link to="/about">
+              <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
+            </router-link>
+          </div>
+          <input v-model="maxValueInput" type="text" id="max-value" class="mt-2 w-full input-text"
+              placeholder="Enter a value" :disabled="beta.inputDisabled" />
+        </div>
+      </div>
+
+      <div>
+        <!-- Sampling data -->
+        <div class="flex items-center justify-between space-x-2">
+          <label for="sampling-data" class="label-text">
+            Sampling Data
+            <span class="w-auto muted-link text-xs p-4">
+              load from file
+            </span>
+          </label>
+          <router-link to="/about">
+            <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />
+          </router-link>
+        </div>
+        <textarea v-model="beta.samplingData" id="sampling-data" rows="4"
+          class="mt-2 w-full h-[12rem] input-text"
+          placeholder="Enter numbers separated with new line, comma or space" 
+          :disabled="beta.inputDisabled">
+        </textarea>
+      </div>
 
         <!-- Submit Button -->
-        <div>
-            <div class="text-center">
-                <button @click="submitData" class="primary-button" :disabled="isDisabled">Analyze</button>
-            </div>
+      <div>
+        <div class="text-center">
+          <button @click="submitData" class="primary-button" 
+            :disabled="beta.inputDisabled">Analyze
+          </button>
         </div>
+      </div>
     </div>
 </template>

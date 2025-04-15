@@ -1,58 +1,56 @@
 <script setup>
 
 import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
-import { betaInputStore, betaResultsStore }
-        from "../../store/index.js";
+import { betaStore } from "../../store/index.js";
 import { Chart, registerables } from 'chart.js';
 
-const betaResults = betaResultsStore();
-const betaInputs = betaInputStore();
+const beta = betaStore();
 
 Chart.register(...registerables);
 const cdfChartRef = ref(null);
 let cdfChart = null;
 
 const cdfMin = computed(() =>
-  betaResults.scaledData.map((x, i) => ({
+  beta.scaledData.map((x, i) => ({
     x: x,
-    y: betaResults.cdfMin[i],
+    y: beta.cdfMin[i],
   }))
 );
 
 const cdfMax = computed(() =>
-  betaResults.scaledData.map((x, i) => ({
+  beta.scaledData.map((x, i) => ({
     x: x,
-    y: betaResults.cdfMax[i],
+    y: beta.cdfMax[i],
   }))
 );
 
 const fittedCdfMin = computed(() =>
-  betaResults.q.map((x, i) => ({
+  beta.q.map((x, i) => ({
     x: x,
-    y: betaResults.fittedCdfMin[i],
+    y: beta.fittedCdfMin[i],
   }))
 );
 
 const fittedCdfMax = computed(() =>
-  betaResults.q.map((x, i) => ({
+  beta.q.map((x, i) => ({
     x: x,
-    y: betaResults.fittedCdfMax[i],
+    y: beta.fittedCdfMax[i],
   }))
 );
 
 const predictedCdf = computed(() =>
-  betaResults.q.map((x, i) => ({
+  beta.q.map((x, i) => ({
     x: x,
-    y: betaResults.predictedCdf[i],
+    y: beta.predictedCdf[i],
   }))
 );
 
 let testModeCdf = null;
-if (betaInputs.testMode) {
+if (beta.testMode) {
   testModeCdf = computed(() =>
-    betaResults.q.map((x, i) => ({
+    beta.q.map((x, i) => ({
       x: x,
-      y: betaResults.testModeCdf[i],
+      y: beta.testModeCdf[i],
     }))
   );
 }
@@ -106,7 +104,7 @@ const createChart = () => {
           fill: false,
           pointRadius: 0,
         },
-        ...(betaInputs.testMode
+        ...(beta.testMode
           ? [
               {
                 type: 'line',
@@ -210,7 +208,7 @@ watch(
       cdfChart.data.datasets[2].data = fittedCdfMin.value;
       cdfChart.data.datasets[3].data = fittedCdfMax.value;
       cdfChart.data.datasets[4].data = predictedCdf.value;
-      if (betaInputs.testMode) {
+      if (beta.testMode) {
         cdfChart.data.datasets[5].data = testModeCdf.value;
       }
       cdfChart.update();

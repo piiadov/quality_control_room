@@ -157,11 +157,6 @@ pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64,
         .map(|&x| (x - min_value) / (max_value - min_value))
         .collect();
 
-    // Check if scaled data is in [0, 1]
-    if scaled_data.iter().any(|&x| x < 0.0 || x > 1.0) {
-        response.info = "Scaled data is out of bounds [0, 1]".to_string();
-        return response;
-    }
     let sample_size = scaled_data.len();
     let mut sorted_scaled_data = scaled_data.clone();
     sorted_scaled_data.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
@@ -209,16 +204,65 @@ pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64,
     response.bins = bins.clone();
     response.freq = frequencies(&bins, &scaled_data);
 
-    // response.freq_min = frequencies(&bins, &generate_beta_random_numbers(
-    //     scaled_data.len(), response.beta_params_min[0], response.beta_params_min[1]));
-    // response.freq_max = frequencies(&bins, &generate_beta_random_numbers(
-    //     scaled_data.len(), response.beta_params_max[0], response.beta_params_max[1]));
-    // response.freq_pred = frequencies(&bins, &generate_beta_random_numbers(
-    //     scaled_data.len(), response.predicted_beta_params[0], response.predicted_beta_params[1]));
-    // if test_mode {
-    //     response.test_mode_freq = frequencies(&bins, &generate_beta_random_numbers(
-    //         scaled_data.len(), response.test_mode_beta_params[0], response.test_mode_beta_params[1]));
-    // }
+    response.freq_min = frequencies(&bins, &generate_beta_random_numbers(
+        scaled_data.len(), response.beta_params_min[0], response.beta_params_min[1]));
+    response.freq_max = frequencies(&bins, &generate_beta_random_numbers(
+        scaled_data.len(), response.beta_params_max[0], response.beta_params_max[1]));
+    response.freq_pred = frequencies(&bins, &generate_beta_random_numbers(
+        scaled_data.len(), response.predicted_beta_params[0], response.predicted_beta_params[1]));
+    if test_mode {
+        response.test_mode_freq = frequencies(&bins, &generate_beta_random_numbers(
+            scaled_data.len(), response.test_mode_beta_params[0], response.test_mode_beta_params[1]));
+    }
+
+    response.error = 0;
+    response
+}
+
+pub fn handle_update_bins(data: Vec<f64>, min_value: f64, max_value: f64,
+                           bins_number: usize) -> Response {
+    let mut response = Response::default();
+    response.command = "Update bins".to_string();
+    response.min_value = min_value;
+    response.max_value = max_value;
+    response.data = data.clone();
+
+    // Check if data is empty
+    if data.is_empty() {
+        response.info = "Data is empty".to_string();
+        return response;
+    }
+    // Check if data is valid
+    if data.iter().any(|&x| x.is_nan()) {
+        response.info = "Data contains NaN".to_string();
+        return response;
+    }
+
+    // Check if min_value and max_value are valid
+    if min_value >= max_value {
+        response.info = "min_value must be less than max_value".to_string();
+        return response;
+    }
+
+    // Scaling data with min_value and max_value to [0, 1]
+    let scaled_data: Vec<f64> = data.iter()
+        .map(|&x| (x - min_value) / (max_value - min_value))
+        .collect();
+
+    // Check bins_number
+    if bins_number < 1 || bins_number > 50 {
+        response.info = "bins_number must be in [0, 50]".to_string();
+        return response;
+    }
+
+    // Bins and sampling frequencies
+
+    println!("bins_number: {}", bins_number);
+
+
+    let bins = generate_range([0.0, 1.0], bins_number + 1);
+    response.bins = bins.clone();
+    response.freq = frequencies(&bins, &scaled_data);
 
     response.error = 0;
     response

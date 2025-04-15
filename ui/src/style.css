@@ -110,6 +110,12 @@
     cursor: pointer;
 }
 
+.muted-link-disabled {
+    cursor: wait;
+    opacity: 0.5;
+}
+
+
 .theme-link {
     color: var(--secondary-color);
     text-decoration: none;
@@ -210,4 +216,9 @@ textarea::placeholder {
     color: var(--text-color);
     font-size: 14px;
     font-weight: 400;
+}
+
+.input-text:disabled {
+    color: var(--disabled-text-color);
+    cursor: wait;
 }

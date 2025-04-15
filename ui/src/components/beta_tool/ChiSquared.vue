@@ -1,8 +1,7 @@
 <script setup>
-import {betaResultsStore, betaInputStore} from "../../store/index.js";
+import { betaStore } from "../../store/index.js";
 
-const betaInputs = betaInputStore();
-const betaResults = betaResultsStore();
+const beta = betaStore();
 </script>
 
 <template>
@@ -48,7 +47,7 @@ const betaResults = betaResultsStore();
           *
         </td>
       </tr>
-      <tr v-if="betaInputs.testMode === true">
+      <tr v-if="beta.testMode === true">
         <td class="border p-2 text-left">
           &#967;<sup>2</sup> for true quality (test mode)
         </td>

@@ -1,5 +1,5 @@
 use futures::{SinkExt, StreamExt};
-use libserver::api::{handle_about, handle_calc, ApiRequest};
+use libserver::api::{handle_about, handle_calc, handle_update_bins, ApiRequest};
 use warp::{Filter, ws};
 
 #[tokio::main]
@@ -34,7 +34,20 @@ async fn handle_socket(websocket: ws::WebSocket) {
                             );
                             let response_json =
                                     serde_json::to_string(&response).unwrap_or("{}".to_string());
-                        
+                            if let Err(e) =
+                                    tx.send(ws::Message::text(response_json)).await {
+                                eprintln!("Failed to send response: {}", e);
+                            }
+                        }
+                        "update_bins" => {
+                            let response = handle_update_bins(
+                                request.data.unwrap_or(vec![]),
+                                request.min_value.unwrap_or(f64::NAN),
+                                request.max_value.unwrap_or(f64::NAN),
+                                request.bins_number.unwrap_or(10)
+                            );
+                            let response_json =
+                                    serde_json::to_string(&response).unwrap_or("{}".to_string());
                             if let Err(e) =
                                     tx.send(ws::Message::text(response_json)).await {
                                 eprintln!("Failed to send response: {}", e);
