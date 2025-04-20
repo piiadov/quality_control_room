@@ -1,21 +1,13 @@
 <script setup>
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted } from 'vue';
 import { sidebarStore, defectsStore } from '../../store/index.js';
 
 const defects = defectsStore();
 const sidebar = sidebarStore();
 
 onMounted(() => {
-  sidebar.activeTool = "DefectsRate";
-  if (defects.showResults === true) {
-    sidebar.sidebarResults = true;
-  }
+  sidebar.activeTool = defects;
 });
-
-onUnmounted(() => {
-  sidebar.sidebarResults = false;
-});
-
 
 </script>
 

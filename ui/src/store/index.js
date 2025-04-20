@@ -35,8 +35,7 @@ export const languageStore = defineStore('language', {
 
 export const sidebarStore = defineStore('sidebar', {
     state: () => ({
-        activeTool: "",
-        sidebarResults: false
+        activeTool: undefined,
     }),
 });
 

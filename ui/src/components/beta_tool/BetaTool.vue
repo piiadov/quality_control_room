@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted } from 'vue';
 import { sidebarStore, betaStore } from '../../store/index.js';
 import Inputs from './Inputs.vue';
 import Cdf from './Cdf.vue';
@@ -12,14 +12,7 @@ const sidebar = sidebarStore();
 const beta = betaStore();
 
 onMounted(() => {
-  sidebar.activeTool = "BetaProfile";
-  if (beta.showResults === true) {
-    sidebar.sidebarResults = true;
-  }
-});
-
-onUnmounted(() => {
-  sidebar.sidebarResults = false;
+  sidebar.activeTool = beta;
 });
 
 </script>

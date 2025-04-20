@@ -1,13 +1,13 @@
 <script setup>
 import { useI18n, } from 'vue-i18n';
-import { sidebarStore } from '../store/index';
-import DefectsRateSidebarResults from './defects_rate/SidebarResults.vue';
-import BetaSidebarResults from './beta_tool/SidebarResults.vue';
-import NormalSidebarResults from './normal_tool/SidebarResults.vue';
-import {WrenchScrewdriverIcon} from "@heroicons/vue/24/outline/index.js";
+import { sidebarStore, betaStore, normalStore, defectsStore } from '../store/index';
+import {WrenchScrewdriverIcon, DocumentChartBarIcon} from "@heroicons/vue/24/outline/index.js";
 
 const { t } = useI18n();
 const sidebar = sidebarStore();
+const beta = betaStore();
+const normal = normalStore();
+const defects = defectsStore();
 </script>
 
 <template>
@@ -23,32 +23,47 @@ const sidebar = sidebarStore();
       <div class="space-y-4 p-4">
         <router-link to="/tools/defects-rate">
           <button class="secondary-button mb-4 min-w-full"
-                  :class="[sidebar.activeTool === 'DefectsRate'? 'active-tool': '']">
+                  :class="[sidebar.activeTool === defects? 'active-tool': '']">
             {{ t('home.defect-rate-btn') }}
           </button>
         </router-link>
 
         <router-link to="/tools/beta-profile">
           <button class="secondary-button mb-4 min-w-full"
-                  :class="[sidebar.activeTool === 'BetaProfile'? 'active-tool': '']">
+                  :class="[sidebar.activeTool === beta? 'active-tool': '']">
             {{ t('home.beta-profile-btn') }}
           </button>
         </router-link>
 
         <router-link to="/tools/normal-profile">
           <button class="secondary-button mb-4 min-w-full"
-                  :class="[sidebar.activeTool === 'NormalProfile'? 'active-tool': '']">
+                  :class="[sidebar.activeTool === normal? 'active-tool': '']">
             {{ t('home.normal-profile-btn') }}
           </button>
         </router-link>
       </div>
 
-      <DefectsRateSidebarResults
-          v-if="sidebar.activeTool === 'DefectsRate' && sidebar.sidebarResults" />
-      <BetaSidebarResults
-          v-if="sidebar.activeTool === 'BetaProfile' && sidebar.sidebarResults" />
-      <NormalSidebarResults
-          v-if="sidebar.activeTool === 'NormalProfile' && sidebar.sidebarResults" />
+      <div v-if="sidebar.activeTool !== undefined && sidebar.activeTool.showResults">
+        <div class="p-4 text-lg font-bold border-b border-border flex items-center justify-left">
+          <DocumentChartBarIcon class="h-5 w-5 mr-2" />
+          <span>{{ t('sidebar.results') }}</span>
+        </div>
+        <div class="space-y-4 p-4">
+          <button class="results-button mb-0 min-w-full">
+            Clean
+          </button>
+          <button class="results-button mb-4 min-w-full">
+            Export
+          </button>
+          <button class="results-button mb-4 min-w-full">
+            Generate report
+          </button>
+          <button class="results-button mb-4 min-w-full">
+            Virtual engineer
+          </button>
+        </div>
+      </div>
+
     </aside>
 
     <div class="flex-1 p-6">

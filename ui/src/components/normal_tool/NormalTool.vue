@@ -1,21 +1,13 @@
 <script setup>
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted } from 'vue';
 import { sidebarStore, normalStore } from '../../store/index.js';
 
 const normal = normalStore();
 const sidebar = sidebarStore();
 
 onMounted(() => {
-  sidebar.activeTool = "NormalProfile";
-  if (normal.showResults === true) {
-    sidebar.sidebarResults = true;
-  }
+  sidebar.activeTool = normal;
 });
-
-onUnmounted(() => {
-  sidebar.sidebarResults = false;
-});
-
 
 </script>
 
