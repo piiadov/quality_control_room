@@ -49,6 +49,7 @@ export const settingsStore = defineStore('settings', {
 
 export const betaStore = defineStore('beta', {
     state: () => ({
+        errorMessage: "",
         testMode: true,
         inputDisabled: false,
         batchVolume: NaN,
@@ -76,6 +77,19 @@ export const betaStore = defineStore('beta', {
         testModePdf: [],
         bins:[],
         freq: [],
+        predictedChi2: 0.0,
+        predictedPval: 0.0,
+        minChi2: 0.0,
+        minPval: 0.0,
+        maxChi2: 0.0,
+        maxPval: 0.0,
+        testModeChi2: 0.0,
+        testModePval: 0.0,
+        critVal: 0.0,
+        minDecision: false,
+        maxDecision: false,
+        predictedDecision: false,
+        testModeDecision: false,
     }),
 })
 

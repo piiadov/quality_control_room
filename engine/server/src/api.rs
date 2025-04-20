@@ -13,6 +13,10 @@ pub struct ApiRequest {
     pub max_value: Option<f64>,
     pub population_size: Option<usize>,
     pub bins_number: Option<usize>,
+    pub beta_params_min: Option<[f64; 2]>,
+    pub beta_params_max: Option<[f64; 2]>,
+    pub predicted_beta_params: Option<[f64; 2]>,
+    pub test_mode_beta_params: Option<[f64; 2]>,
 }
 
 #[derive(Serialize, Debug)]
@@ -46,6 +50,19 @@ pub struct Response {
     freq_max: Vec<f64>,
     freq_pred: Vec<f64>,
     test_mode_freq: Vec<f64>,
+    predicted_chi2: f64,
+    min_chi2: f64,
+    max_chi2: f64,
+    test_mode_chi2: f64,
+    predicted_pval: f64,
+    min_pval: f64,
+    max_pval: f64,
+    test_mode_pval: f64,
+    crit_val: f64,
+    min_decision: bool,
+    max_decision: bool,
+    predicted_decision: bool,
+    test_mode_decision: bool,
 }
 
 impl Default for Response {
@@ -80,6 +97,19 @@ impl Default for Response {
             freq_max: vec![],
             freq_pred: vec![],
             test_mode_freq: vec![],
+            predicted_chi2: 0.0,
+            min_chi2: 0.0,
+            max_chi2: 0.0,
+            test_mode_chi2: 0.0,
+            predicted_pval: 0.0,
+            min_pval: 0.0,
+            max_pval: 0.0,
+            test_mode_pval: 0.0,
+            crit_val: 0.0,
+            min_decision: false,
+            max_decision: false,
+            predicted_decision: false,
+            test_mode_decision: false,
         }
     }
 }
@@ -204,23 +234,58 @@ pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64,
     response.bins = bins.clone();
     response.freq = frequencies(&bins, &scaled_data);
 
-    response.freq_min = frequencies(&bins, &generate_beta_random_numbers(
-        scaled_data.len(), response.beta_params_min[0], response.beta_params_min[1]));
-    response.freq_max = frequencies(&bins, &generate_beta_random_numbers(
-        scaled_data.len(), response.beta_params_max[0], response.beta_params_max[1]));
-    response.freq_pred = frequencies(&bins, &generate_beta_random_numbers(
-        scaled_data.len(), response.predicted_beta_params[0], response.predicted_beta_params[1]));
+    response.freq_min = expected_freq_beta(response.beta_params_min[0], 
+        response.beta_params_min[1], &bins, scaled_data.len());
+
+    response.freq_max = expected_freq_beta(response.beta_params_max[0], 
+        response.beta_params_max[1], &bins, scaled_data.len());
+
+    response.freq_pred = expected_freq_beta(response.predicted_beta_params[0],
+        response.predicted_beta_params[1], &bins, scaled_data.len());
+
     if test_mode {
-        response.test_mode_freq = frequencies(&bins, &generate_beta_random_numbers(
-            scaled_data.len(), response.test_mode_beta_params[0], response.test_mode_beta_params[1]));
+        response.test_mode_freq = expected_freq_beta(response.test_mode_beta_params[0],
+            response.test_mode_beta_params[1], &bins, scaled_data.len());
+    }
+
+    // Chi2 tests
+    (
+        response.min_chi2, 
+        response.crit_val, 
+        response.min_pval, 
+        response.min_decision
+    ) = chi2_test(&response.freq, &response.freq_min, 0.05);
+
+    (
+        response.max_chi2, 
+        _, 
+        response.max_pval, 
+        response.max_decision
+    ) = chi2_test(&response.freq, &response.freq_max, 0.05);
+
+    (
+        response.predicted_chi2, 
+        _, 
+        response.predicted_pval, 
+        response.predicted_decision
+    ) = chi2_test(&response.freq, &response.freq_pred, 0.05);
+    if test_mode {
+        (
+            response.test_mode_chi2, 
+            _, 
+            response.test_mode_pval, 
+            response.test_mode_decision
+        ) = chi2_test(&response.freq, &response.test_mode_freq, 0.05);
     }
 
     response.error = 0;
     response
 }
 
-pub fn handle_update_bins(data: Vec<f64>, min_value: f64, max_value: f64,
-                           bins_number: usize) -> Response {
+pub fn handle_update_bins(data: Vec<f64>, min_value: f64, max_value: f64, bins_number: usize,
+                          beta_params_min: [f64; 2], beta_params_max: [f64; 2],
+                          predicted_beta_params: [f64; 2], test_mode_beta_params: [f64; 2],
+                          test_mode: bool) -> Response {
     let mut response = Response::default();
     response.command = "Update bins".to_string();
     response.min_value = min_value;
@@ -255,14 +320,74 @@ pub fn handle_update_bins(data: Vec<f64>, min_value: f64, max_value: f64,
         return response;
     }
 
+    // Check beta params
+    if beta_params_min.iter().any(|&x| x.is_nan() || x <= 0.0) {
+        response.info = "beta_params_min contains NaN or 0.0".to_string();
+        return response;
+    }
+    if beta_params_max.iter().any(|&x| x.is_nan() || x <= 0.0) {
+        response.info = "beta_params_max contains NaN or 0.0".to_string();
+        return response;
+    }
+    if predicted_beta_params.iter().any(|&x| x.is_nan() || x <= 0.0) {
+        response.info = "predicted_beta_params contains NaN or 0.0".to_string();
+        return response;
+    }
+    if test_mode {
+        if test_mode_beta_params.iter().any(|&x| x.is_nan() || x <= 0.0) {
+            response.info = "test_mode_beta_params contains NaN or 0.0".to_string();
+            return response;
+        }
+    }
+
     // Bins and sampling frequencies
-
-    println!("bins_number: {}", bins_number);
-
-
     let bins = generate_range([0.0, 1.0], bins_number + 1);
     response.bins = bins.clone();
     response.freq = frequencies(&bins, &scaled_data);
+
+    response.freq_min = expected_freq_beta(beta_params_min[0], 
+        beta_params_min[1], &bins, scaled_data.len());
+
+    response.freq_max = expected_freq_beta(beta_params_max[0], 
+        beta_params_max[1], &bins, scaled_data.len());
+
+    response.freq_pred = expected_freq_beta(predicted_beta_params[0],
+        predicted_beta_params[1], &bins, scaled_data.len());
+
+    if test_mode {
+        response.test_mode_freq = expected_freq_beta(test_mode_beta_params[0],
+            test_mode_beta_params[1], &bins, scaled_data.len());
+    }
+
+    // Chi2 tests
+    (
+        response.min_chi2, 
+        response.crit_val, 
+        response.min_pval, 
+        response.min_decision
+    ) = chi2_test(&response.freq, &response.freq_min, 0.05);
+
+    (
+        response.max_chi2, 
+        _, 
+        response.max_pval, 
+        response.max_decision
+    ) = chi2_test(&response.freq, &response.freq_max, 0.05);
+
+    (
+        response.predicted_chi2, 
+        _, 
+        response.predicted_pval, 
+        response.predicted_decision
+    ) = chi2_test(&response.freq, &response.freq_pred, 0.05);
+    if test_mode {
+        (
+            response.test_mode_chi2, 
+            _, 
+            response.test_mode_pval, 
+            response.test_mode_decision
+        ) = chi2_test(&response.freq, &response.test_mode_freq, 0.05);
+    }
 
     response.error = 0;
     response

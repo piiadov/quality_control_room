@@ -3,9 +3,12 @@ use nlopt::{Algorithm, Nlopt, SuccessState};
 use nlopt::SuccessState::Success;
 use nlopt::Target::Minimize;
 use rand::rng;
+// use rand_distr::num_traits::sign;
 use rand_distr::{Beta as RandBeta, Distribution};
 use rayon::prelude::*;
-use statrs::distribution::{Discrete, Hypergeometric, Beta, ContinuousCDF, Continuous};
+//use serde::de;
+use statrs::distribution::{Discrete, Hypergeometric, Beta, 
+    ContinuousCDF, Continuous, ChiSquared};
 use statrs::statistics::Statistics;
 
 fn hypergeometric_pmf(n_total: u64, k_total: u64, n: u64, k: u64) -> f64 {
@@ -260,11 +263,55 @@ pub fn frequencies(bins: &Vec<f64>, data: &Vec<f64>) -> Vec<f64> {
     for &value in data {
         if let Some(pos) = bins.iter().position(|&bin| bin > value) {
             if pos > 0 {
-            freq[pos - 1] += 1.0 / data.len() as f64;
+                freq[pos - 1] += 1.0;
             }
         } else if (value - bins[bins.len() - 1]).abs() < f64::EPSILON {
-            freq[bins.len() - 2] += 1.0 / data.len() as f64;
+            freq[bins.len() - 2] += 1.0;
         }
     }
     freq
+}
+
+fn chi2_stat(observed: &Vec<f64>, expected: &Vec<f64>) -> f64 {
+    assert_eq!(observed.len(), expected.len(), "Observed and expected vectors must have the same length");
+    observed.iter()
+        .zip(expected.iter())
+        .map(|(obs, exp)| 
+            if *exp <= 0.0 { 
+                panic!("Expected value is zero or negative: {}", exp)
+            } else {
+                (obs - exp).powi(2) / exp
+            })
+        .sum()
+}
+
+pub fn chi2_test(observed: &Vec<f64>, expected: &Vec<f64>, significance: f64) -> 
+                (f64, f64, f64, bool) {
+    let chi2 = chi2_stat(observed, expected);
+    let dof = observed.len() as f64 - 1.0;
+    let chi2_dist = ChiSquared::new(dof)
+        .expect("Invalid degrees of freedom for Chi-squared distribution");
+    let p_value = 1.0 - chi2_dist.cdf(chi2);
+    let crit_value = chi2_dist.inverse_cdf(1.0 - significance);
+    let decision: bool;
+    if chi2 > crit_value {
+        decision = false;
+    } else {
+        decision = true;
+    }
+    (chi2, crit_value, p_value, decision)
+}
+
+pub fn expected_freq_beta(alpha: f64, beta: f64, bins: &Vec<f64>, sample_size: usize) -> Vec<f64> {
+
+    let dist = Beta::new(alpha, beta)
+        .expect("Invalid Beta distribution parameters");
+
+    let mut expected_freq = vec![0.0; bins.len() - 1];
+    for i in 0..(bins.len() - 1) {
+        let lower_bound = bins[i];
+        let upper_bound = bins[i + 1];
+        expected_freq[i] = (dist.cdf(upper_bound) - dist.cdf(lower_bound)) * sample_size as f64;
+    }
+    expected_freq
 }

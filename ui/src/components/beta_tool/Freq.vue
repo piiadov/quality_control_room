@@ -2,12 +2,11 @@
   import { ref, onMounted, onUnmounted, computed, watch } from "vue";
   import { betaStore } from "../../store/index.js";
   import { Chart, registerables } from 'chart.js';
-  import { ArrowPathIcon } from "@heroicons/vue/24/outline/index.js";
+  import {ArrowPathIcon} from "@heroicons/vue/24/outline/index.js";
   import WebSocketService from '../../services/websocketService.js'
   import { settingsStore } from "../../store/index.js";
 
   const settings = settingsStore();
-  const errorMessage = ref(null);
   const beta = betaStore();
 
   Chart.register(...registerables);
@@ -18,33 +17,42 @@
   const updateFreq = () => {
     const binsNumber = parseInt(newBinsNumber.value, 10);
     if (isNaN(binsNumber) || binsNumber < 1 || binsNumber > 50) {
-      errorMessage.value = "Please enter a valid number of bins (1-50)";
-      return;
+      beta.errorMessage = "Please enter a valid number of bins (1-50)";
     } else {
       const savedBinsNumber = beta.binsNumber;
-      errorMessage.value = null;
+      beta.errorMessage = "";
       beta.inputDisabled = true;
       beta.binsNumber = binsNumber;
       const ws = new WebSocketService(settings.backendUrl, settings.connectTimeout);
       ws.connectAndSendData('update_bins', beta)
       .then(response => {
         if (response.data.error > 0) {
-          errorMessage.value = 'Backend error: ' + response.data.info;
+          beta.errorMessage = 'Backend error: ' + response.data.info;
           beta.inputDisabled = false;
           beta.binsNumber = savedBinsNumber;
         } else {
-          errorMessage.value = null;
+          beta.errorMessage = "";
           beta.inputDisabled = false;
           beta.bins = response.data.bins;
           beta.freq = response.data.freq;
           beta.binsNumber = response.data.bins.length - 1;
-
-          console.log(beta.binsNumber, ' bins, beta.bins: ', JSON.stringify(beta.bins));
-
+          beta.predictedChi2 = response.data.predicted_chi2;
+          beta.minChi2 = response.data.min_chi2;
+          beta.maxChi2 = response.data.max_chi2;
+          beta.testModeChi2 = response.data.test_mode_chi2;
+          beta.predictedPval = response.data.predicted_pval;
+          beta.minPval = response.data.min_pval;
+          beta.maxPval = response.data.max_pval;
+          beta.testModePval = response.data.test_mode_pval;
+          beta.predictedDecision = response.data.predicted_decision;
+          beta.minDecision = response.data.min_decision;
+          beta.maxDecision = response.data.max_decision;
+          beta.testModeDecision = response.data.test_mode_decision;
+          beta.critVal = response.data.crit_val;
         }
       })
       .catch(error => {
-        errorMessage.value = error.message;
+        beta.errorMessage = error.message;
         beta.inputDisabled = false;
         beta.binsNumber = savedBinsNumber;
       });
@@ -52,11 +60,15 @@
     }
   };
 
+  const binsLabels = computed(() => 
+    beta.bins.map(bin => bin.toFixed(2).toString())
+  );
+
   const createHistogram = () => {
     freqChart = new Chart(freqRef.value, {
       type: "bar",
       data: {
-        labels: beta.bins,
+        labels: binsLabels.value,
         datasets: [
           {
             label: "Frequency",
@@ -69,17 +81,33 @@
       },
       options: {
         responsive: true,
+        plugins: {
+          legend: {
+            display: false,
+          },
+          title: {
+            display: true,
+            text: "Sampling data counts per bin",
+            font: {
+              size: 14,
+            },
+          },
+        },
         scales: {
           x: {
+            type: "category",
             title: {
               display: true,
               text: "Bins",
             },
+            offset: true,
+            barPercentage: 1.0,
+            categoryPercentage: 1.0,
           },
           y: {
             title: {
               display: true,
-              text: "Frequency",
+              text: "Counts",
             },
             beginAtZero: true,
           },
@@ -106,9 +134,9 @@
     () => {
       newBinsNumber.value = beta.bins.length - 1;
       if (freqChart) {
-      freqChart.data.labels = beta.bins;
-      freqChart.data.datasets[0].data = beta.freq;
-      freqChart.update();
+        freqChart.data.labels = binsLabels.value;
+        freqChart.data.datasets[0].data = beta.freq;
+        freqChart.update();
       }
     },
     { deep: true }
@@ -118,7 +146,6 @@
 
 <template>
   <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-4">
-    <div v-if="errorMessage" class="error-message text-sm h-4">{{ errorMessage }}</div>
     <div class="flex items-center space-x-4">
       <label for="binsNumber" class="label-text">Number of Bins:</label>
       <input
@@ -128,15 +155,15 @@
         class="w-20 input-text"
         :disabled="beta.inputDisabled"
       />
-
       <ArrowPathIcon
         class="h-5 w-5 label-text"
         :class="{ 'muted-link': !beta.inputDisabled, 'muted-link-disabled': beta.inputDisabled }"
         :disabled="beta.inputDisabled"
         @click="() => {beta.inputDisabled ? {} : updateFreq();}"
       />
-
     </div>
-    <canvas ref="freqRef" style="width: 500px; height: 300px"></canvas>
+    <div style="position: relative; height: 100%; width: 100%;">
+      <canvas ref="freqRef" style="display: block; width: 100%; height: 90%;"></canvas>
+    </div>
   </div>
 </template>

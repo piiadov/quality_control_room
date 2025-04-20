@@ -1,5 +1,5 @@
 use models::wrapper::*;
-use models::train::{conf_int, generate_range, quality_interval, frequencies};
+use models::train::*;
 use csv::{ReaderBuilder, Trim};
 use std::fs::File;
 use std::path::Path;
@@ -213,10 +213,31 @@ fn test_cdf_comparison() {
 
 #[test]
 fn test_freq() {
-    let data = vec![0.0, 0.1, 0.2, 0.3, 0.35, 0.5, 0.7, 0.9, 1.0];
+    let data = vec![0.0, 0.1, 0.2, 0.3, 0.35, 0.5, 0.7, 0.8, 0.9, 1.0];
     let bins = vec![0.0, 0.2, 0.4, 0.6, 0.8, 1.0];
     let frequencies = frequencies(&bins, &data);
     println!("Bins: {:?}", bins);
     println!("Data: {:?}", data);
     println!("Frequencies: {:.2?}", frequencies);
+}
+
+#[test]
+fn test_chi2() {
+    // let observed: Vec<f64> = vec![50.0, 30.0, 20.0, 25.0];
+    // let expected: Vec<f64> = vec![40.0, 40.0, 20.0, 25.0];
+
+    let bins = generate_range([0.0, 1.0], 11);
+    let observed = expected_freq_beta(2.0, 4.0, &bins, 30);
+    let expected = expected_freq_beta(2.0, 5.0, &bins, 30);
+
+    let (chi2, crit_value, p_value, decision) 
+        = chi2_test(&observed, &expected, 0.05);
+
+    println!("Observed frequencies: {:.2?}", observed);
+    println!("Expected frequencies: {:.2?}", expected);
+    println!("Chi-squared statistic: {}", chi2);
+    println!("Critical value: {}", crit_value);
+    println!("P-value: {}", p_value);
+    println!("Decision: {}", decision);
+
 }

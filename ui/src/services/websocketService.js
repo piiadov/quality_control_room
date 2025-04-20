@@ -34,6 +34,10 @@ class WebSocketService {
                 max_value: store.maxValue,
                 data: store.samplingData,
                 bins_number: store.binsNumber,
+                beta_params_min: store.betaParamsMin,
+                beta_params_max: store.betaParamsMax,
+                predicted_beta_params: store.predictedBetaParams,
+                test_mode_beta_params: store.testModeBetaParams,
             };
             // alert("Sending command: " + JSON.stringify(message));
             

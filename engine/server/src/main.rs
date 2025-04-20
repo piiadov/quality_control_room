@@ -44,7 +44,12 @@ async fn handle_socket(websocket: ws::WebSocket) {
                                 request.data.unwrap_or(vec![]),
                                 request.min_value.unwrap_or(f64::NAN),
                                 request.max_value.unwrap_or(f64::NAN),
-                                request.bins_number.unwrap_or(10)
+                                request.bins_number.unwrap_or(10),
+                                request.beta_params_min.unwrap_or([f64::NAN;2]),
+                                request.beta_params_max.unwrap_or([f64::NAN;2]),
+                                request.predicted_beta_params.unwrap_or([f64::NAN;2]),
+                                request.test_mode_beta_params.unwrap_or([f64::NAN;2]),
+                                request.test_mode
                             );
                             let response_json =
                                     serde_json::to_string(&response).unwrap_or("{}".to_string());

@@ -58,7 +58,21 @@
     box-shadow: none;
 }
 
-.secondary-button {
+.primary-button:hover {
+    border-color: var(--primary-color);
+}
+
+.primary-button:focus {
+    outline: none;
+    box-shadow: 0 0 1px var(--primary-color);
+}
+
+.primary-button:active {
+    background-color: transparent;
+    box-shadow: 0 0 5px var(--primary-color);
+}
+
+.secondary-button, .results-button {
     background-color: transparent;
     color: var(--muted-text-color);
     border: 2px solid var(--border-color);
@@ -74,33 +88,19 @@
         border-color 0.1s;
 }
 
-.primary-button:hover {
-    border-color: var(--primary-color);
-}
-
-.secondary-button:hover {
+.secondary-button:hover, .results-button:hover {
     /*background-color: var(--button-hover-bg);*/
     border-color: var(--secondary-color);
     color: var(--text-color);
     /*box-shadow: 0 0 1px var(--primary-color);*/
 }
 
-.primary-button:focus {
-    outline: none;
-    box-shadow: 0 0 1px var(--primary-color);
-}
-
-.secondary-button:focus, .active-tool {
+.secondary-button:focus, .active-tool, .results-button:active {
     outline: none;
     background-color: var(--button-bg);
     color: var(--text-color);
     border-color: var(--secondary-color);
     box-shadow: 0 0 3px var(--secondary-color);
-}
-
-.primary-button:active {
-    background-color: transparent;  /* Same as hover background */
-    box-shadow: 0 0 5px var(--primary-color);
 }
 
 /* Link style */
@@ -114,7 +114,6 @@
     cursor: wait;
     opacity: 0.5;
 }
-
 
 .theme-link {
     color: var(--secondary-color);

@@ -4,6 +4,7 @@ import { sidebarStore } from '../store/index';
 import DefectsRateSidebarResults from './defects_rate/SidebarResults.vue';
 import BetaSidebarResults from './beta_tool/SidebarResults.vue';
 import NormalSidebarResults from './normal_tool/SidebarResults.vue';
+import {WrenchScrewdriverIcon} from "@heroicons/vue/24/outline/index.js";
 
 const { t } = useI18n();
 const sidebar = sidebarStore();
@@ -13,8 +14,10 @@ const sidebar = sidebarStore();
   <div class="flex flex-grow">
     <!-- Toolbox -->
     <aside class="w-64 min-w-[16rem] p-4 bg-backgroundSecondary text-text">
-      <div class="p-4 text-lg font-bold border-b border-border">
-        {{ t('sidebar.tools') }}
+
+      <div class="p-4 text-lg font-bold border-b border-border flex items-center justify-left">
+        <WrenchScrewdriverIcon class="h-5 w-5 mr-2" />
+        <span>{{ t('sidebar.tools') }}</span>
       </div>
 
       <div class="space-y-4 p-4">
