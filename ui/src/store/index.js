@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import i18n from '../services/i18n';
+import JSZip from "jszip";
 
 export const themeStore = defineStore("theme", {
     state: () => ({
@@ -90,6 +91,161 @@ export const betaStore = defineStore('beta', {
         predictedDecision: false,
         testModeDecision: false,
     }),
+    actions: {
+        resetState() {
+            this.errorMessage = "";
+            this.testMode = true;
+            this.inputDisabled = false;
+            this.batchVolume = NaN;
+            this.samplingData = [];
+            this.minValue = NaN;
+            this.maxValue = NaN;
+            this.binsNumber = NaN;
+            this.showResults = false;
+            this.info = "";
+            this.scaledData = [];
+            this.cdfMin = [];
+            this.cdfMax = [];
+            this.q = [];
+            this.fittedCdfMin = [];
+            this.fittedCdfMax = [];
+            this.fittedPdfMin = [];
+            this.fittedPdfMax = [];
+            this.betaParamsMin = [0.0, 0.0];
+            this.betaParamsMax = [0.0, 0.0];
+            this.predictedBetaParams = [0.0, 0.0];
+            this.predictedCdf = [];
+            this.predictedPdf = [];
+            this.testModeBetaParams = [0.0, 0.0];
+            this.testModeCdf = [];
+            this.testModePdf = [];
+            this.bins = [];
+            this.freq = [];
+            this.predictedChi2 = 0.0;
+            this.predictedPval = 0.0;
+            this.minChi2 = 0.0;
+            this.minPval = 0.0;
+            this.maxChi2 = 0.0;
+            this.maxPval = 0.0;
+            this.testModeChi2 = 0.0;
+            this.testModePval = 0.0;
+            this.critVal = 0.0;
+            this.minDecision = false;
+            this.maxDecision = false;
+            this.predictedDecision = false;
+            this.testModeDecision = false;
+        },
+        exportResults() {
+            const data = this.samplingData.map((item, index) => ({
+                index: index,
+                value: item,
+            }));
+            const csvData = [
+                "Index,Value",
+                data.map(e => e.index + "," + e.value).join("\n")
+            ].join("\n");
+            
+            const resultInfo = [
+                { key: "Batch Volume (Discretization)", value: this.batchVolume },
+                { key: "Min Value", value: this.minValue },
+                { key: "Max Value", value: this.maxValue },
+                { key: "Bins Number", value: this.binsNumber },
+                { key: "Min Quality Beta Parameters", value: this.betaParamsMin },
+                { key: "Max Quality Beta Parameters", value: this.betaParamsMax },
+                { key: "Predicted Beta Parameters", value: this.predictedBetaParams },
+                ...(this.testMode ? [
+                    { key: "Test Mode Beta Parameters", value: this.testModeBetaParams }
+                ] : []),
+                { key: "Critical Value", value: this.critVal },
+                { key: "Predicted Chi2", value: this.predictedChi2 },
+                { key: "Predicted Pval", value: this.predictedPval },
+                { key: "Predicted Decision", value: this.predictedDecision ? 'Accept' : 'Reject' },
+                { key: "Min Quality Chi2", value: this.minChi2 },
+                { key: "Min Quality Pval", value: this.minPval },
+                { key: "Min Quality Decision", value: this.minDecision ? 'Accept' : 'Reject' },
+                { key: "Max Quality Chi2", value: this.maxChi2 },
+                { key: "Max Quality Pval", value: this.maxPval },
+                { key: "Max Quality Decision", value: this.maxDecision ? 'Accept' : 'Reject' },
+                ...(this.testMode ? [
+                    { key: "True Quality Chi2", value: this.testModeChi2 },
+                    { key: "True Quality Pval", value: this.testModePval },
+                    { key: "True Quality Decision", value: this.testModeDecision ? 'Accept' : 'Reject' }
+                ] : []),
+            ];
+            const csvResultInfo = resultInfo.map(e => e.key + "," + e.value).join("\n");
+
+            const freqHist = this.bins.map((bin, index) => ({
+                bin: bin,
+                frequency: this.freq[index],
+            }));
+            const csvFreqHist = [
+                "Bin,Frequency",
+                freqHist.slice(0, -1).map(e => e.bin + "," + e.frequency).join("\n")
+            ].join("\n");
+
+
+            const estimatedCdf = this.scaledData.map((value, index) => ({
+                index: index,
+                scaledData: value,
+                cdfMin: this.cdfMin[index],
+                cdfMax: this.cdfMax[index],
+            })).map(e => e.index + "," + e.scaledData + "," + e.cdfMin + "," + e.cdfMax).join("\n");
+
+            const csvEstimatedCdf = [
+                "Index,Scaled Data,CDF Min Quality,CDF Max Quality",
+                estimatedCdf
+            ].join("\n");
+
+            const resultData = this.q.map((value, index) => ({
+                q: value,
+                fittedCdfMin: this.fittedCdfMin[index],
+                fittedCdfMax: this.fittedCdfMax[index],
+                fittedPdfMin: this.fittedPdfMin[index],
+                fittedPdfMax: this.fittedPdfMax[index],
+                predictedCdf: this.predictedCdf[index],
+                predictedPdf: this.predictedPdf[index],
+                ...(this.testMode ? {
+                    testModeCdf: this.testModeCdf[index],
+                    testModePdf: this.testModePdf[index],
+                } : {}),
+            }));
+            const csvResultDataContent = resultData.map(e => 
+                e.q + "," + 
+                e.fittedCdfMin + "," + 
+                e.fittedCdfMax + "," + 
+                e.fittedPdfMin + "," + 
+                e.fittedPdfMax + "," + 
+                e.predictedCdf + "," + 
+                e.predictedPdf + "," + 
+                (this.testMode ? (
+                    e.testModeCdf + "," + 
+                    e.testModePdf)
+                 : "")
+            ).join("\n");
+            
+            const csvResultData = [
+                "x,CDF Min Quality,CDF Max Quality,PDF Min Quality,PDF Max Quality,CDF Predicted Quality,PDF Predicted Quality,CDF True Quality,PDF True Quality",
+                csvResultDataContent
+            ].join("\n");
+
+            const zip = new JSZip();
+            zip.file("data.csv", csvData);
+            zip.file("result_info.csv", csvResultInfo);
+            zip.file("frequency_histogram.csv", csvFreqHist);
+            zip.file("estimated_cdf.csv", csvEstimatedCdf);
+            zip.file("result_data.csv", csvResultData);
+
+            zip.generateAsync({ type: "blob" }).then((content) => {
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(content);
+                const timestamp = new Date().toISOString().replace(/[-:.]/g, "_");
+                link.download = `quality_room_${timestamp}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+    }
 })
 
 export const defectsStore = defineStore('defects', {
@@ -97,6 +253,14 @@ export const defectsStore = defineStore('defects', {
         testMode: true,
         showResults: false,
     }),
+    actions: {
+        resetState() {
+            this.testMode = true;
+            this.showResults = false;
+        },
+        exportResults() {
+        }
+    }
 })
 
 export const normalStore = defineStore('normal', {
@@ -104,4 +268,12 @@ export const normalStore = defineStore('normal', {
         testMode: true,
         showResults: false,
     }),
+    actions: {
+        resetState() {
+            this.testMode = true;
+            this.showResults = false;
+        },
+        exportResults() {
+        }
+    }
 })

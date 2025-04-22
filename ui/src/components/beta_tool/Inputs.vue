@@ -8,9 +8,26 @@ const settings = settingsStore();
 const beta = betaStore();
 const sidebar = sidebarStore();
 
-function stringToNumberArray(str) {
+const fileInput = ref(null); // Reference to the hidden file input
+
+const stringToNumberArray = (str) => {
   return str !== "" && str.match(/-?\d*\.?\d+/g) ? str.match(/-?\d*\.?\d+/g).map(Number) : [];
-}
+};
+
+const loadFile = () => {
+  fileInput.value.click();
+};
+
+const handleFileUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      beta.samplingData = e.target.result; // Set the file content to the textarea
+    };
+    reader.readAsText(file); // Read the file as text
+  }
+};
 
 const batchVolumeInput = computed(() =>
   !isNaN(beta.batchVolume) ? beta.batchVolume : ''
@@ -137,14 +154,8 @@ const submitData = () => {
 
 <template>
     <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-4">
-<!--      <div class="relative">-->
-<!--        <router-link to="/about" class="absolute top-0 -right-4">-->
-<!--          <QuestionMarkCircleIcon class="h-5 w-5 muted-link" />-->
-<!--        </router-link>-->
-<!--      </div>-->
-
       <!-- Message if test mode -->
-      <div v-if="beta.testMode" class="h-2 info-message text-sm">
+      <div v-if="beta.testMode" class="h-2 info-message text-sm text-center">
           Test mode
       </div>
 
@@ -183,9 +194,16 @@ const submitData = () => {
           <label for="sampling-data" class="label-text">
             Sampling Data
           </label>
-          <span class="w-auto muted-link text-xs p-0">
+          <span class="w-auto muted-link text-xs p-0" @click="loadFile">
               load from file
           </span>
+          <input
+            ref="fileInput"
+            type="file"
+            accept=".txt"
+            class="hidden"
+            @change="handleFileUpload"
+          />
         </div>
         <textarea v-model="beta.samplingData" id="sampling-data" rows="4"
           class="mt-2 w-full h-[12rem] input-text"

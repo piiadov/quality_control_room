@@ -2,7 +2,6 @@
 import { useI18n, } from 'vue-i18n';
 import { sidebarStore, betaStore, normalStore, defectsStore } from '../store/index';
 import {WrenchScrewdriverIcon, DocumentChartBarIcon} from "@heroicons/vue/24/outline/index.js";
-
 const { t } = useI18n();
 const sidebar = sidebarStore();
 const beta = betaStore();
@@ -21,10 +20,10 @@ const defects = defectsStore();
       </div>
 
       <div class="space-y-4 p-4">
-        <router-link to="/tools/defects-rate">
+        <router-link to="/tools/normal-profile">
           <button class="secondary-button mb-4 min-w-full"
-                  :class="[sidebar.activeTool === defects? 'active-tool': '']">
-            {{ t('home.defect-rate-btn') }}
+                  :class="[sidebar.activeTool === normal? 'active-tool': '']">
+            {{ t('home.normal-profile-btn') }}
           </button>
         </router-link>
 
@@ -35,10 +34,10 @@ const defects = defectsStore();
           </button>
         </router-link>
 
-        <router-link to="/tools/normal-profile">
+        <router-link to="/tools/defects-rate">
           <button class="secondary-button mb-4 min-w-full"
-                  :class="[sidebar.activeTool === normal? 'active-tool': '']">
-            {{ t('home.normal-profile-btn') }}
+                  :class="[sidebar.activeTool === defects? 'active-tool': '']">
+            {{ t('home.defect-rate-btn') }}
           </button>
         </router-link>
       </div>
@@ -49,10 +48,10 @@ const defects = defectsStore();
           <span>{{ t('sidebar.results') }}</span>
         </div>
         <div class="space-y-4 p-4">
-          <button class="results-button mb-0 min-w-full">
+            <button class="results-button mb-0 min-w-full" @click="sidebar.activeTool.resetState">
             Clean
-          </button>
-          <button class="results-button mb-4 min-w-full">
+            </button>
+          <button class="results-button mb-4 min-w-full" @click="sidebar.activeTool.exportResults">
             Export
           </button>
           <button class="results-button mb-4 min-w-full">

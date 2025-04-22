@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
 import Home from '../views/Home.vue';
-import About from '../views/About.vue';
+import Help from '../views/Help.vue';
 import Dashboard from '../components/Dashboard.vue';
 import DefectsRate from '../components/defects_rate/DefectsRate.vue';
 import BetaTool from "../components/beta_tool/BetaTool.vue";
@@ -9,7 +9,7 @@ import NormalTool from "../components/normal_tool/NormalTool.vue";
 
 const routes = [
     { path: '/', component: Home },
-    { path: '/about', component: About },
+    { path: '/help', component: Help },
     {
         path: '/tools',
         component: Dashboard,

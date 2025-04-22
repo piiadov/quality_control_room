@@ -45,9 +45,9 @@ const language = languageStore();
           <span class="ml-2">{{ t('header.home') }}</span>
         </router-link>
 
-        <router-link to="/about" class="flex items-center px-3 py-2 hover:opacity-80">
+        <router-link to="/help" class="flex items-center px-3 py-2 hover:opacity-80">
           <InformationCircleIcon class="h-6 w-6 text-current" />
-          <span class="ml-2">{{ t('header.about') }}</span>
+          <span class="ml-2">{{ t('header.help') }}</span>
         </router-link>
 
         <!-- Theme Toggle Button -->
