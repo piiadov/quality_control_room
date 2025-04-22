@@ -1,14 +1,13 @@
 <script setup>
 import WebSocketService from '../../services/websocketService.js'
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { settingsStore, betaStore, sidebarStore} from '../../store/index.js';
-// import { QuestionMarkCircleIcon } from "@heroicons/vue/24/outline/index.js";
 
 const settings = settingsStore();
 const beta = betaStore();
 const sidebar = sidebarStore();
 
-const fileInput = ref(null); // Reference to the hidden file input
+const fileInput = ref(null);
 
 const stringToNumberArray = (str) => {
   return str !== "" && str.match(/-?\d*\.?\d+/g) ? str.match(/-?\d*\.?\d+/g).map(Number) : [];
@@ -23,72 +22,81 @@ const handleFileUpload = (event) => {
   if (file) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      beta.samplingData = e.target.result; // Set the file content to the textarea
+      beta.samplingData = e.target.result;
     };
-    reader.readAsText(file); // Read the file as text
+    reader.readAsText(file);
   }
 };
 
-const batchVolumeInput = computed(() =>
+const batchVolumeInput = ref(null);
+const batchVolumeInputTestMode = computed(() =>
   !isNaN(beta.batchVolume) ? beta.batchVolume : ''
 );
 
-const minValueInput = computed(() =>
+const minValueInput = ref(null);
+const minValueInputTestMode = computed(() =>
   !isNaN(beta.minValue) ? beta.minValue : ''
 );
-
-const maxValueInput = computed(() =>
+const maxValueInput = ref(null);
+const maxValueInputTestMode = computed(() =>
   !isNaN(beta.maxValue) ? beta.maxValue : ''
 );
 
 const submitData = () => {
   beta.errorMessage = "";
-  const volume = parseInt(beta.batchVolume.toString(), 10);
-  if ((isNaN(volume) || volume < 1) && !beta.testMode) {
-    beta.errorMessage = 'Dscretization: Please enter valid positive integer number';
-    beta.showResults = false;
-    return;
-  } else {
-    beta.batchVolume = volume;
-  }
+  if (!beta.testMode) {
+    const volume = parseInt(batchVolumeInput.value, 10);
+    if (isNaN(volume) || volume < 1) {
+      beta.errorMessage = 'Dscretization: Please enter valid positive integer number';
+      beta.batchVolume = NaN;
+      beta.showResults = false;
+      return;
+    } else {
+      beta.batchVolume = volume;
+    }
 
-  const minValue = parseFloat(beta.minValue.toString());
-  const maxValue = parseFloat(beta.maxValue.toString());
-  if ((isNaN(minValue) || isNaN(maxValue)) && !beta.testMode) {
-    beta.errorMessage = 'Min or Max value: Please enter valid float number';
-    beta.showResults = false;
-    return;
-  } else {
-    beta.minValue = minValue;
-    beta.maxValue = maxValue;
-  }
+    const minValue = parseFloat(minValueInput.value);
+    const maxValue = parseFloat(maxValueInput.value);
+    if (isNaN(minValue) || isNaN(maxValue)) {
+      beta.errorMessage = 'Min or Max value: Please enter valid float number';
+      beta.minValue = NaN;
+      beta.maxValue = NaN;
+      beta.showResults = false;
+      return;
+    } else {
+      beta.minValue = minValue;
+      beta.maxValue = maxValue;
+    }
 
-  if ((minValue >= maxValue) && !beta.testMode) {
-    beta.errorMessage = 'Min value must be less than max value';
-    beta.showResults = false;
-    return;
-  }
+    if (minValue >= maxValue) {
+      beta.errorMessage = 'Min value must be less than max value';
+      beta.minValue = NaN;
+      beta.maxValue = NaN;
+      beta.showResults = false;
+      return;
+    }
 
-  const data = stringToNumberArray(beta.samplingData.toString());
-  if (data.length === 0 && !beta.testMode) {
-    beta.errorMessage = 'Sampling data: Please enter valid float numbers';
-    beta.showResults = false;
-    return;
-  } else {
-    beta.samplingData = data;
-  }
+    const data = stringToNumberArray(beta.samplingData.toString());
+    if (data.length === 0) {
+      beta.errorMessage = 'Sampling data: Please enter valid float numbers';
+      beta.showResults = false;
+      return;
+    } else {
+      beta.samplingData = data;
+    }
 
-  if (volume < data.length && !beta.testMode) {
-    beta.errorMessage = 'Batch volume or discretization factor must be greater than sampling size';
-    beta.showResults = false;
-    return;
-  }
+    if (volume < data.length) {
+      beta.errorMessage = 'Batch volume or discretization factor must be greater than sampling size';
+      beta.showResults = false;
+      return;
+    }
 
-  const areAllValuesInRange = data.every(value => value >= beta.minValue && value <= beta.maxValue);
-  if (!areAllValuesInRange && !beta.testMode) {
-    beta.errorMessage = 'Sampling data: All values must be within the specified range';
-    beta.showResults = false;
-    return;
+    const areAllValuesInRange = data.every(value => value >= beta.minValue && value <= beta.maxValue);
+    if (!areAllValuesInRange) {
+      beta.errorMessage = 'Sampling data: All values must be within the specified range';
+      beta.showResults = false;
+      return;
+    }
   }
 
   beta.inputDisabled = true;
@@ -150,13 +158,25 @@ const submitData = () => {
     });
 };
 
+watch(() => beta.testMode, (newValue) => {
+  // Think on:
+  // is there a better way to resetState on testMode changed? 
+  // may it cause a trigger loop with v-model in checkbox?
+  beta.resetState();
+  beta.testMode = newValue; 
+});
+
 </script>
 
 <template>
     <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-4">
-      <!-- Message if test mode -->
-      <div v-if="beta.testMode" class="h-2 info-message text-sm text-center">
-          Test mode
+      <!-- Test mode -->
+      <div class="h-2">
+          <div class="flex items-center justify-center space-x-2">
+            <input type="checkbox" id="test-mode" v-model="beta.testMode"
+                   :disabled="beta.inputDisabled"/>
+            <label for="test-mode" class="label-text">Test Mode</label>
+          </div>
       </div>
 
       <!--Error message-->
@@ -169,22 +189,29 @@ const submitData = () => {
         <!-- Batch volume/discretization -->
         <div class="flex-1">
           <label for="batch-volume" class="label-text">Discretization</label>
-          <input v-model="batchVolumeInput" type="text" id="batch-volume" class="mt-2 w-full input-text"
-              placeholder="Enter an integer" :disabled="beta.inputDisabled" />
+          <input v-if="beta.testMode" v-model="batchVolumeInputTestMode" type="text" id="batch-volume" class="mt-2 w-full input-text"
+                placeholder="Enter an integer" :disabled="beta.inputDisabled" readonly/>
+          <input v-else v-model="batchVolumeInput" type="text" id="batch-volume" class="mt-2 w-full input-text"
+                placeholder="Enter an integer" :disabled="beta.inputDisabled"/>
+
         </div>
 
         <!-- Min Value -->
         <div class="flex-1">
           <label for="min-value" class="label-text">Min Value</label>
-          <input v-model="minValueInput" type="text" id="min-value" class="mt-2 w-full input-text"
-                 placeholder="Enter a value" :disabled="beta.inputDisabled" />
+          <input v-if="beta.testMode" v-model="minValueInputTestMode" type="text" id="min-value" class="mt-2 w-full input-text"
+                 placeholder="Enter a value" :disabled="beta.inputDisabled" readonly/>
+          <input v-else v-model="minValueInput" type="text" id="min-value" class="mt-2 w-full input-text"
+                 placeholder="Enter a value" :disabled="beta.inputDisabled"/>
         </div>
 
         <!-- Max Value -->
         <div class="flex-1">
           <label for="max-value" class="label-text">Max Value</label>
-          <input v-model="maxValueInput" type="text" id="max-value" class="mt-2 w-full input-text"
-              placeholder="Enter a value" :disabled="beta.inputDisabled" />
+          <input v-if="beta.testMode" v-model="maxValueInputTestMode" type="text" id="max-value" class="mt-2 w-full input-text"
+              placeholder="Enter a value" :disabled="beta.inputDisabled" readonly/>
+          <input v-else v-model="maxValueInput" type="text" id="max-value" class="mt-2 w-full input-text"
+              placeholder="Enter a value" :disabled="beta.inputDisabled"/>
         </div>
       </div>
 

@@ -50,7 +50,7 @@ export const settingsStore = defineStore('settings', {
 export const betaStore = defineStore('beta', {
     state: () => ({
         errorMessage: "",
-        testMode: true,
+        testMode: false,
         inputDisabled: false,
         batchVolume: NaN,
         samplingData: [],
@@ -94,7 +94,6 @@ export const betaStore = defineStore('beta', {
     actions: {
         resetState() {
             this.errorMessage = "";
-            this.testMode = true;
             this.inputDisabled = false;
             this.batchVolume = NaN;
             this.samplingData = [];
@@ -248,14 +247,26 @@ export const betaStore = defineStore('beta', {
     }
 })
 
-export const defectsStore = defineStore('defects', {
+export const normalStore = defineStore('normal', {
     state: () => ({        
+        errorMessage: "",
         testMode: true,
+        inputDisabled: false,
+        batchVolume: NaN,
+        samplingData: [],
+        minValue: NaN,
+        maxValue: NaN,
+        binsNumber: NaN,
         showResults: false,
+
+
+
+
+
+        
     }),
     actions: {
         resetState() {
-            this.testMode = true;
             this.showResults = false;
         },
         exportResults() {
@@ -263,14 +274,13 @@ export const defectsStore = defineStore('defects', {
     }
 })
 
-export const normalStore = defineStore('normal', {
+export const defectsStore = defineStore('defects', {
     state: () => ({        
         testMode: true,
         showResults: false,
     }),
     actions: {
         resetState() {
-            this.testMode = true;
             this.showResults = false;
         },
         exportResults() {
