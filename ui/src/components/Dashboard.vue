@@ -1,7 +1,8 @@
 <script setup>
-import { useI18n, } from 'vue-i18n';
-import { sidebarStore, betaStore, normalStore, defectsStore } from '../store/index';
+import { sidebarStore, betaStore, normalStore, defectsStore } from "../store/index.js";
 import {WrenchScrewdriverIcon, DocumentChartBarIcon} from "@heroicons/vue/24/outline/index.js";
+import { useI18n } from "vue-i18n";
+
 const { t } = useI18n();
 const sidebar = sidebarStore();
 const beta = betaStore();
@@ -49,16 +50,16 @@ const defects = defectsStore();
         </div>
         <div class="space-y-4 p-4">
             <button class="results-button mb-0 min-w-full" @click="sidebar.activeTool.resetState">
-            Clean
+              {{ t('sidebar.clean') }}
             </button>
           <button class="results-button mb-4 min-w-full" @click="sidebar.activeTool.exportResults">
-            Export
+            {{ t('sidebar.export') }}
           </button>
           <button class="results-button mb-4 min-w-full">
-            Generate report
+            {{ t('sidebar.gen-report') }}
           </button>
           <button class="results-button mb-4 min-w-full">
-            Virtual engineer
+            {{ t('sidebar.virt-engineer') }}
           </button>
         </div>
       </div>

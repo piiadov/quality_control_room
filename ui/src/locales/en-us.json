@@ -22,6 +22,68 @@
   },
   "sidebar": {
     "tools": "Tools",
-    "results": "Results"
+    "results": "Results",
+    "clean": "Clean",
+    "export": "Export",
+    "gen-report": "Generate Report",
+    "virt-engineer": "Virtual Engineer"
+  },
+
+  "beta": {
+    "title": "Quality Profile using Beta-Distribution",
+    "inputs": {
+      "test-mode": "Test Mode",
+      "discretization": "Discretization",
+      "min-value": "Min Value",
+      "max-value": "Max Value",
+      "discretization-placeholder": "Enter an integer",
+      "min-value-placeholder": "Enter a number",
+      "max-value-placeholder": "Enter a number",
+      "sampling-data": "Sampling Data",
+      "sampling-data-placeholder": "Enter numbers separated with new line, space or comma",
+      "load-data": "load from file",
+      "analyze": "Analyze"
+    },
+    "freq": {
+      "bins-number": "Number of bins",
+      "chart-title": "Counts Distribution",
+      "chart-x-label": "Bins",
+      "chart-y-label": "Counts"
+    },
+    "cdf": {
+      "chart-title": "Complementary CDF",
+      "est-cdf-min": "Estimated CDF Min",
+      "est-cdf-max": "Estimated CDF Max",
+      "cdf-min": "CDF Min",
+      "cdf-max": "CDF Max",
+      "predicted-cdf": "Predicted CDF",
+      "test-mode-cdf": "True CDF (test mode)"
+    },
+    "pdf": {
+      "chart-title": "PDF",
+      "pdf-min": "PDF Min",
+      "pdf-max": "PDF Max",
+      "predicted-pdf": "Predicted PDF",
+      "test-mode-pdf": "True PDF (test mode)"
+    },
+    "params": {
+      "title": "Beta - Distribution",
+      "min-quality": "Minimum Quality",
+      "max-quality": "Maximum Quality",
+      "predicted-quality": "Predicted Quality",
+      "test-mode-quality": "True Quality (test mode)"
+    },
+    "chi2": {
+      "title": "Test",
+      "p-value":"p-value",
+      "decision": "Decision",
+      "bins-number": "Number of bins",
+      "critical": "Critical",
+      "value": "- value",
+      "predicted-quality": "Predicted Quality",
+      "min-quality": "Minimum Quality",
+      "max-quality": "Maximum Quality", 
+      "test-mode-quality": "True Quality (test mode)"
+    }
   }
 }

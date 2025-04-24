@@ -2,7 +2,9 @@
 import WebSocketService from '../../services/websocketService.js'
 import { ref, computed, watch } from 'vue';
 import { settingsStore, betaStore, sidebarStore} from '../../store/index.js';
+import { useI18n, } from 'vue-i18n';
 
+const { t } = useI18n();
 const settings = settingsStore();
 const beta = betaStore();
 const sidebar = sidebarStore();
@@ -172,10 +174,10 @@ watch(() => beta.testMode, (newValue) => {
     <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-4">
       <!-- Test mode -->
       <div class="h-2">
-          <div class="flex items-center justify-center space-x-2">
+          <div class="flex items-center justify-left space-x-2">
             <input type="checkbox" id="test-mode" v-model="beta.testMode"
                    :disabled="beta.inputDisabled"/>
-            <label for="test-mode" class="label-text">Test Mode</label>
+            <label for="test-mode" class="label-text">{{ t('beta.inputs.test-mode') }}</label>
           </div>
       </div>
 
@@ -188,30 +190,30 @@ watch(() => beta.testMode, (newValue) => {
       <div class="flex space-x-4">
         <!-- Batch volume/discretization -->
         <div class="flex-1">
-          <label for="batch-volume" class="label-text">Discretization</label>
+          <label for="batch-volume" class="label-text">{{ t('beta.inputs.discretization') }}</label>
           <input v-if="beta.testMode" v-model="batchVolumeInputTestMode" type="text" id="batch-volume" class="mt-2 w-full input-text"
-                placeholder="Enter an integer" :disabled="beta.inputDisabled" readonly/>
+                :placeholder="t('beta.inputs.discretization-placeholder')" :disabled="beta.inputDisabled" readonly/>
           <input v-else v-model="batchVolumeInput" type="text" id="batch-volume" class="mt-2 w-full input-text"
-                placeholder="Enter an integer" :disabled="beta.inputDisabled"/>
+                :placeholder="t('beta.inputs.discretization-placeholder')" :disabled="beta.inputDisabled"/>
 
         </div>
 
         <!-- Min Value -->
         <div class="flex-1">
-          <label for="min-value" class="label-text">Min Value</label>
+          <label for="min-value" class="label-text">{{ t('beta.inputs.min-value') }}</label>
           <input v-if="beta.testMode" v-model="minValueInputTestMode" type="text" id="min-value" class="mt-2 w-full input-text"
-                 placeholder="Enter a value" :disabled="beta.inputDisabled" readonly/>
+                 :placeholder="t('beta.inputs.min-value-placeholder')" :disabled="beta.inputDisabled" readonly/>
           <input v-else v-model="minValueInput" type="text" id="min-value" class="mt-2 w-full input-text"
-                 placeholder="Enter a value" :disabled="beta.inputDisabled"/>
+                 :placeholder="t('beta.inputs.min-value-placeholder')" :disabled="beta.inputDisabled"/>
         </div>
 
         <!-- Max Value -->
         <div class="flex-1">
-          <label for="max-value" class="label-text">Max Value</label>
+          <label for="max-value" class="label-text">{{ t('beta.inputs.max-value') }}</label>
           <input v-if="beta.testMode" v-model="maxValueInputTestMode" type="text" id="max-value" class="mt-2 w-full input-text"
-              placeholder="Enter a value" :disabled="beta.inputDisabled" readonly/>
+              :placeholder="t('beta.inputs.max-value-placeholder')" :disabled="beta.inputDisabled" readonly/>
           <input v-else v-model="maxValueInput" type="text" id="max-value" class="mt-2 w-full input-text"
-              placeholder="Enter a value" :disabled="beta.inputDisabled"/>
+              :placeholder="t('beta.inputs.max-value-placeholder')" :disabled="beta.inputDisabled"/>
         </div>
       </div>
 
@@ -219,22 +221,22 @@ watch(() => beta.testMode, (newValue) => {
         <!-- Sampling data -->
         <div class="flex items-center justify-between space-x-2">
           <label for="sampling-data" class="label-text">
-            Sampling Data
+            {{ t('beta.inputs.sampling-data') }}
           </label>
           <span class="w-auto muted-link text-xs p-0" @click="loadFile">
-              load from file
+            {{ t('beta.inputs.load-data') }}
           </span>
           <input
             ref="fileInput"
             type="file"
-            accept=".txt"
+            accept=".txt, .csv"
             class="hidden"
             @change="handleFileUpload"
           />
         </div>
         <textarea v-model="beta.samplingData" id="sampling-data" rows="4"
           class="mt-2 w-full h-[12rem] input-text"
-          placeholder="Enter numbers separated with new line, comma or space" 
+          :placeholder="t('beta.inputs.sampling-data-placeholder')" 
           :disabled="beta.inputDisabled">
         </textarea>
       </div>
@@ -243,7 +245,7 @@ watch(() => beta.testMode, (newValue) => {
       <div>
         <div class="text-center">
           <button @click="submitData" class="primary-button" 
-            :disabled="beta.inputDisabled">Analyze
+            :disabled="beta.inputDisabled">{{ t('beta.inputs.analyze') }}
           </button>
         </div>
       </div>

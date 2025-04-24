@@ -1,11 +1,14 @@
 <script setup>
   import { ref, onMounted, onUnmounted, computed, watch } from "vue";
-  import { betaStore } from "../../store/index.js";
-  import { Chart, registerables } from 'chart.js';
+  import { betaStore, settingsStore, themeStore, languageStore } from "../../store/index.js";
+  import { Chart, registerables } from "chart.js";
   import {ArrowPathIcon} from "@heroicons/vue/24/outline/index.js";
-  import WebSocketService from '../../services/websocketService.js'
-  import { settingsStore } from "../../store/index.js";
+  import WebSocketService from "../../services/websocketService.js";
+  import { useI18n } from "vue-i18n";
 
+  const { t } = useI18n();
+  const language = languageStore();
+  const theme = themeStore();
   const settings = settingsStore();
   const beta = betaStore();
 
@@ -71,23 +74,26 @@
         labels: binsLabels.value,
         datasets: [
           {
-            label: "Frequency",
+            label: t('beta.freq.chart-y-label'),
             data: beta.freq,
-            backgroundColor: "rgba(75, 192, 192, 0.2)",
-            borderColor: "rgba(75, 192, 192, 1)",
+            backgroundColor: getComputedStyle(document.documentElement)
+                            .getPropertyValue('--bar-color').trim(),
+            borderColor: getComputedStyle(document.documentElement)
+                        .getPropertyValue('--bar-border-color').trim(),
             borderWidth: 1,
           },
         ],
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: {
             display: false,
           },
           title: {
             display: true,
-            text: "Sampling data counts per bin",
+            text: t('beta.freq.chart-title'),
             font: {
               size: 14,
             },
@@ -98,7 +104,11 @@
             type: "category",
             title: {
               display: true,
-              text: "Bins",
+              text: t('beta.freq.chart-x-label'),
+            },
+            grid: {
+              color: getComputedStyle(document.documentElement)
+                    .getPropertyValue('--grid-color').trim(),
             },
             offset: true,
             barPercentage: 1.0,
@@ -107,7 +117,11 @@
           y: {
             title: {
               display: true,
-              text: "Counts",
+              text: t('beta.freq.chart-y-label'),
+            },
+            grid: {
+              color: getComputedStyle(document.documentElement)
+                    .getPropertyValue('--grid-color').trim(),
             },
             beginAtZero: true,
           },
@@ -142,12 +156,31 @@
     { deep: true }
   );
 
+watch(
+  () => [theme.currentTheme, language.currentLanguage],
+  ([newTheme, newLanguage], [oldTheme, oldLanguage]) => {
+    if (freqChart) {
+      if (newTheme !== oldTheme) {
+        freqChart.destroy();
+        createHistogram();
+      }
+      if (newLanguage !== oldLanguage) {
+        freqChart.options.plugins.title.text = t('beta.freq.chart-title');
+        freqChart.options.scales.x.title.text = t('beta.freq.chart-x-label');
+        freqChart.options.scales.y.title.text = t('beta.freq.chart-y-label');
+        freqChart.data.datasets[0].label = t('beta.freq.chart-y-label');
+        freqChart.update();
+      }
+    }
+  }
+);
+
 </script>
 
 <template>
   <div class="min-w-lg bg-backgroundSecondary p-8 rounded-lg shadow-lg space-y-4">
     <div class="flex items-center space-x-4">
-      <label for="binsNumber" class="label-text">Number of Bins:</label>
+      <label for="binsNumber" class="label-text">{{ t('beta.freq.bins-number') }}</label>
       <input
         id="inputBinsNumber"
         type="text"
@@ -162,8 +195,8 @@
         @click="() => {beta.inputDisabled ? {} : updateFreq();}"
       />
     </div>
-    <div style="position: relative; height: 100%; width: 100%;">
-      <canvas ref="freqRef" style="display: block; width: 100%; height: 90%;"></canvas>
+    <div class="chart-container">
+      <canvas ref="freqRef"></canvas>
     </div>
   </div>
 </template>

@@ -1,6 +1,8 @@
 <script setup>
 import {betaStore} from "../../store/index.js";
+import { useI18n } from "vue-i18n";
 
+const { t } = useI18n()
 const beta = betaStore();
 </script>
 
@@ -11,7 +13,7 @@ const beta = betaStore();
       <thead>
         <tr>
           <th class="border p-2 text-center">
-            <strong>Beta - Distribution</strong>
+            <strong>{{ t('beta.params.title') }}</strong>
           </th>
           <th class="border p-2 text-center">
             <strong>&#945;</strong>
@@ -24,7 +26,7 @@ const beta = betaStore();
       <tbody>
         <tr>
           <td class="border p-2 text-left">
-            Minimum Quality
+            {{ t('beta.params.min-quality') }}
           </td>
           <td class="border p-2 text-center">
             {{ beta.betaParamsMin[0].toFixed(1) }}
@@ -35,7 +37,7 @@ const beta = betaStore();
         </tr>
         <tr>
           <td class="border p-2 text-left">
-            Maximum Quality
+            {{ t('beta.params.max-quality') }}
           </td>
           <td class="border p-2 text-center">
             {{ beta.betaParamsMax[0].toFixed(1) }}
@@ -46,7 +48,7 @@ const beta = betaStore();
         </tr>
         <tr>
           <td class="border p-2 text-left">
-            Predicted Quality
+            {{ t('beta.params.predicted-quality') }}
           </td>
           <td class="border p-2 text-center">
             {{ beta.predictedBetaParams[0].toFixed(1) }}
@@ -57,7 +59,7 @@ const beta = betaStore();
         </tr>
         <tr v-if="beta.testMode === true">
           <td class="border p-2 text-left">
-            True Quality (test mode)
+            {{ t('beta.params.test-mode-quality') }}
           </td>
           <td class="border p-2 text-center">
             {{ beta.testModeBetaParams[0].toFixed(1) }}

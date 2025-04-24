@@ -3,29 +3,74 @@
 @tailwind utilities;
 
 :root {
-    /* Another one boring light theme*/
-    --background-color: #ffffff;
-    --primary-color: #2563eb;
-    --secondary-color: #10b981;
-    --text-color: #1f2937;
-    --border-color: #e5e7eb;
+    /* A boring light theme*/
+    --background-color: #f4f4f4;
+    --background-secondary-color: #e0e0e0;
+    --text-color: #2b2b2b;
+    --muted-text-color: #6e6e6e;
+    --disabled-text-color: #a8a8a8;
+    --primary-color: #5a9bd5;
+    --secondary-color: #4a74c3;
+    --info-color: #339af0;
+    --disabled-color: #dcdcdc;
+    --border-color: #bcbcbc;
+    --button-bg: #d7dfde;
+    --button-hover-bg: #d4d4d4;
+    --error-color: #ff4444;
+
+    --grid-color: #bcbcbc;
+
+    --bar-color: #1E90FF80;
+    --bar-border-color: #1E90FF;
+
+    --est-cdf-min-color: #2E8B57;
+    --est-cdf-max-color: #2E8B57;
+    --cdf-min-color: #B22222;
+    --cdf-max-color: #B22222;
+    --cdf-predicted-color: #32CD32;
+    --cdf-testmode-color: #1E90FF;
+
+    --pdf-min-color: #B22222;
+    --pdf-max-color: #B22222;
+    --pdf-predicted-color: #32CD32;
+    --pdf-testmode-color: #1E90FF;
+
+    --table-border-color: #bcbcbc;
 }
 
 [data-theme="dark"] {
     /* My nostalgic dark theme */
-    --background-color: #1D1F21;               /* Dark background, almost black */
-    --background-secondary-color: #252B2F;     /* Slightly lighter dark background */
-    --text-color: #D1D1D1;                      /* Neutral light gray for main text */
-    --muted-text-color: #A0A0A0;                /* Muted medium gray for secondary text */
+    --background-color: #1D1F21;
+    --background-secondary-color: #252B2F;
+    --text-color: #D1D1D1;
+    --muted-text-color: #A0A0A0;
     --disabled-text-color: #5c5c5c;
-    --primary-color: #00FF00;                   /* Neon green for accents and highlights */
+    --primary-color: #00FF00;
     --secondary-color: #2E8B57;
     --disabled-color: #2e392e;
-    --border-color: #444C47;                    /* Dark greenish-gray for borders */
-    --button-bg: #3E4C39;                       /* Dark olive green for button background */
-    --button-hover-bg: #4B5C46;                 /* Lighter olive green for button hover */
-    --error-color: #F08080;                     /* Muted red-orange for error messages */
-    --info-color: #00FFFF;                      /* Neon blue for info messages */
+    --border-color: #444C47;
+    --button-bg: #3E4C39;
+    --button-hover-bg: #4B5C46;
+    --error-color: #F08080;
+    --info-color: #00FFFF;
+    
+    --grid-color: #404d41;
+
+    --bar-color: #4CAF5080;
+    --bar-border-color: #4CAF50FF;
+
+    --est-cdf-min-color: #2E8B57;
+    --est-cdf-max-color: #2E8B57;
+    --cdf-min-color: #8B0000;
+    --cdf-max-color: #8B0000;
+    --cdf-predicted-color: #00FF00;
+    --cdf-testmode-color: #1E90FF;
+    --pdf-min-color: #8B0000;
+    --pdf-max-color: #8B0000;
+    --pdf-predicted-color: #00FF00;
+    --pdf-testmode-color: #1E90FF;
+
+    --table-border-color: #404d41;
 }
 
 .primary-button {
@@ -141,7 +186,6 @@ body {
     color: var(--text-color);
 }
 
-/* Input Field Styles */
 input, textarea {
     background-color: transparent;
     color: var(--text-color);
@@ -151,38 +195,34 @@ input, textarea {
     outline: none;
 }
 
-/* Focused State - Glowing Border */
 input:focus {
     outline: none;
-    border: 1px solid var(--secondary-color); /* Subtle border */
+    border: 1px solid var(--secondary-color);
 }
 
-/* Placeholder Text Style */
 input::placeholder {
     color: var(--muted-text-color);
 }
 
 textarea {
-    background-color: transparent;  /* Transparent background */
-    color: var(--text-color);        /* Light gray text */
-    padding: 12px 16px;              /* Adequate padding */
-    border: 1px solid var(--border-color); /* Dark Green/Olive border */
-    border-radius: 8px;              /* Rounded corners */
-    outline: none;                   /* Remove default outline */
-    resize: vertical;                /* Allow vertical resizing */
-    min-height: 120px;               /* Set a minimum height */
-    width: 100%;                     /* Full width */
+    background-color: transparent;
+    color: var(--text-color);
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    outline: none;
+    resize: vertical;
+    min-height: 120px;
+    width: 100%;
 }
 
-/* Focused State - Glowing Border */
 textarea:focus {
-    border: 1px solid var(--secondary-color); /* Neon green border */
-    outline: none; /* Remove default outline on focus */
+    border: 1px solid var(--secondary-color);
+    outline: none;
 }
 
-/* Placeholder Text Style */
 textarea::placeholder {
-    color: var(--muted-text-color); /* Muted gray placeholder */
+    color: var(--muted-text-color);
 }
 
 .error-message {
@@ -195,14 +235,6 @@ textarea::placeholder {
 
 .min-w-lg {
     min-width: 32rem;
-}
-
-.table-results {
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background-color: var(--background-secondary-color);
-    padding: 16px;
-    margin-top: 16px;
 }
 
 .label-text {
@@ -221,3 +253,49 @@ textarea::placeholder {
     color: var(--disabled-text-color);
     cursor: wait;
 }
+
+.chart-container {
+    width: 100%;
+    height: 90%;
+    position: relative;
+  }
+
+.table-results {
+    border: 1px solid var(--table-border-color);
+    border-collapse: collapse;
+    border-radius: 8px;
+    background-color: var(--background-secondary-color);
+    padding: 16px;
+    margin-top: 16px;
+}
+
+.table-results th, .table-results td {
+    border: 1px solid var(--table-border-color);
+}
+
+input[type="checkbox"] {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--background-secondary-color);
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s;
+  }
+  
+  input[type="checkbox"]:checked {
+    background-color: var(--background-secondary-color);
+    border-color: var(--border-color);
+  }
+  
+  input[type="checkbox"]:checked::after {
+    /* content: "✔"; */
+    content: "\2713";
+    color: var(--text-color);
+    font-size: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+  }

@@ -1,10 +1,14 @@
 <script setup>
 
-import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
-import { betaStore } from "../../store/index.js";
-import { Chart, registerables } from 'chart.js';
+import { onMounted, onUnmounted, ref, computed, watch } from "vue";
+import { betaStore, themeStore, languageStore } from "../../store/index.js";
+import { Chart, registerables } from "chart.js";
+import { useI18n } from "vue-i18n";
 
+const { t } = useI18n();
 const beta = betaStore();
+const theme = themeStore();
+const language = languageStore();
 
 Chart.register(...registerables);
 const pdfChartRef = ref(null);
@@ -48,30 +52,36 @@ const createChart = () => {
       datasets: [
         {
           type: 'line',
-          label: 'PDF Min',
+          label: t('beta.pdf.pdf-min'),
           data: fittedPdfMin.value,
-          borderColor: '#8B0000',
-          backgroundColor: '#8B0000',
+          borderColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--pdf-min-color').trim(),
+          backgroundColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--pdf-min-color').trim(),
           borderWidth: 2,
           fill: false,
           pointRadius: 0,
         },
         {
           type: 'line',
-          label: 'PDF Max',
+          label: t('beta.pdf.pdf-max'),
           data: fittedPdfMax.value,
-          borderColor: '#8B0000',
-          backgroundColor: '#8B0000',
+          borderColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--pdf-max-color').trim(),
+          backgroundColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--pdf-max-color').trim(),
           borderWidth: 2,
           fill: false,
           pointRadius: 0,
         },
         {
           type: 'line',
-          label: 'Predicted PDF',
+          label: t('beta.pdf.predicted-pdf'),
           data: predictedPdf.value,
-          borderColor: '#00FF00',
-          backgroundColor: '#00FF00',
+          borderColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--pdf-predicted-color').trim(),
+          backgroundColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--pdf-predicted-color').trim(),
           borderWidth: 2,
           fill: false,
           pointRadius: 0,
@@ -80,10 +90,12 @@ const createChart = () => {
           ? [
               {
                 type: 'line',
-                label: 'True PDF (test mode)',
+                label: t('beta.pdf.test-mode-pdf'),
                 data: testModePdf.value,
-                borderColor: '#1E90FF',
-                backgroundColor: '#1E90FF',
+                borderColor: getComputedStyle(document.documentElement)
+                .getPropertyValue('--pdf-testmode-color').trim(),
+                backgroundColor: getComputedStyle(document.documentElement)
+                .getPropertyValue('--pdf-testmode-color').trim(),
                 borderWidth: 2,
                 fill: false,
                 pointRadius: 0,
@@ -95,6 +107,7 @@ const createChart = () => {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: {
           position: 'bottom',
@@ -106,7 +119,7 @@ const createChart = () => {
         },
         title: {
           display: true,
-          text: 'PDF',
+          text: t('beta.pdf.chart-title'),
           font: {
             size: 14,
           },
@@ -126,7 +139,8 @@ const createChart = () => {
             stepSize: 0.1,
           },
           grid: {
-            color: '#5c5c5c',
+            color: getComputedStyle(document.documentElement)
+                  .getPropertyValue('--grid-color').trim(),
           },
         },
         y: {
@@ -138,7 +152,8 @@ const createChart = () => {
             stepSize: 0.1,
           },
           grid: {
-            color: '#5c5c5c',
+            color: getComputedStyle(document.documentElement)
+                  .getPropertyValue('--grid-color').trim(),
           },
         },
       },
@@ -177,6 +192,28 @@ watch(
     }
   },
   { deep: true }
+);
+
+watch(
+  () => [theme.currentTheme, language.currentLanguage],
+  ([newTheme, newLanguage], [oldTheme, oldLanguage]) => {
+    if (pdfChart) {
+      if (newTheme !== oldTheme) {
+        pdfChart.destroy();
+        createChart();
+      }
+      if (newLanguage !== oldLanguage) {
+        pdfChart.options.plugins.title.text = t('beta.pdf.chart-title');
+        pdfChart.data.datasets[0].label = t('beta.pdf.pdf-min');
+        pdfChart.data.datasets[1].label = t('beta.pdf.pdf-max');
+        pdfChart.data.datasets[2].label = t('beta.pdf.predicted-pdf');
+        if (beta.testMode) {
+          pdfChart.data.datasets[3].label = t('beta.pdf.test-mode-pdf');
+        }
+        pdfChart.update();
+      }
+    }
+  }
 );
 
 </script>

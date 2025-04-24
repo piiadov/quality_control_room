@@ -1,7 +1,8 @@
 <script setup>
-import { HomeIcon, InformationCircleIcon, SunIcon, MoonIcon } from '@heroicons/vue/24/outline';
+import { HomeIcon, InformationCircleIcon, SunIcon, MoonIcon } from "@heroicons/vue/24/outline";
 import { themeStore, languageStore } from "./store";
-import { useI18n, } from 'vue-i18n';
+import { useI18n } from "vue-i18n";
+
 const { t } = useI18n();
 const theme = themeStore();
 const language = languageStore();

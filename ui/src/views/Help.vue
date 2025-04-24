@@ -3,7 +3,7 @@
 
 <template>
   <div class="text-center items-center">
-    <h3>About This Application</h3>
+    <h3>Under construction</h3>
   </div>
 </template>
 

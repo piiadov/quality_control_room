@@ -1,10 +1,14 @@
 <script setup>
 
-import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
-import { betaStore } from "../../store/index.js";
-import { Chart, registerables } from 'chart.js';
+import { onMounted, onUnmounted, ref, computed, watch } from "vue";
+import { betaStore, themeStore, languageStore } from "../../store/index.js";
+import { Chart, registerables } from "chart.js";
+import { useI18n } from "vue-i18n";
 
+const { t } = useI18n();
 const beta = betaStore();
+const theme = themeStore();
+const language = languageStore();
 
 Chart.register(...registerables);
 const cdfChartRef = ref(null);
@@ -62,44 +66,52 @@ const createChart = () => {
       datasets: [
         {
           type: 'scatter',
-          label: 'Estimated CDF Min',
+          label: t('beta.cdf.est-cdf-min'),
           data: cdfMin.value,
-          borderColor: '#2E8B57',
+          borderColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--est-cdf-min-color').trim(),
           pointRadius: 2,
         },
         {
           type: 'scatter',
-          label: 'Estimated CDF Max',
+          label: t('beta.cdf.est-cdf-max'),
           data: cdfMax.value,
-          borderColor: '#2E8B57',
+          borderColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--est-cdf-max-color').trim(),
           pointRadius: 2,
         },
         {
           type: 'line',
-          label: 'CDF Min',
+          label: t('beta.cdf.cdf-min'),
           data: fittedCdfMin.value,
-          borderColor: '#8B0000',
-          backgroundColor: '#8B0000',
+          borderColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--cdf-min-color').trim(),
+          backgroundColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--cdf-min-color').trim(),
           borderWidth: 2,
           fill: false,
           pointRadius: 0,
         },
         {
           type: 'line',
-          label: 'CDF Max',
+          label: t('beta.cdf.cdf-max'),
           data: fittedCdfMax.value,
-          borderColor: '#8B0000',
-          backgroundColor: '#8B0000',
+          borderColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--cdf-max-color').trim(),
+          backgroundColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--cdf-max-color').trim(),
           borderWidth: 2,
           fill: false,
           pointRadius: 0,
         },
         {
           type: 'line',
-          label: 'Predicted CDF',
+          label: t('beta.cdf.predicted-cdf'),
           data: predictedCdf.value,
-          borderColor: '#00FF00',
-          backgroundColor: '#00FF00',
+          borderColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--cdf-predicted-color').trim(),
+          backgroundColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--cdf-predicted-color').trim(),
           borderWidth: 2,
           fill: false,
           pointRadius: 0,
@@ -108,10 +120,12 @@ const createChart = () => {
           ? [
               {
                 type: 'line',
-                label: 'True CDF (test mode)',
+                label: t('beta.cdf.test-mode-cdf'),
                 data: testModeCdf.value,
-                borderColor: '#1E90FF',
-                backgroundColor: '#1E90FF',
+                borderColor: getComputedStyle(document.documentElement)
+                .getPropertyValue('--cdf-testmode-color').trim(),
+                backgroundColor: getComputedStyle(document.documentElement)
+                .getPropertyValue('--cdf-testmode-color').trim(),
                 borderWidth: 2,
                 fill: false,
                 pointRadius: 0,
@@ -123,6 +137,7 @@ const createChart = () => {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: {
           position: 'bottom',
@@ -130,15 +145,11 @@ const createChart = () => {
             font: {
               size: 12,
             },
-            // filter: (legendItem, _) => {
-            //   return legendItem.datasetIndex !== 1 
-            //       && legendItem.datasetIndex !== 3;
-            // },
           },
         },
         title: {
           display: true,
-          text: 'Complementary CDF',
+          text: t('beta.cdf.chart-title'),
           font: {
             size: 14,
           },
@@ -152,13 +163,14 @@ const createChart = () => {
             display: true,
             text: 'x',
           },
+          grid: {
+            color: getComputedStyle(document.documentElement)
+                  .getPropertyValue('--grid-color').trim(),
+          },
           min: 0,
           max: 1,
           ticks: {
             stepSize: 0.1,
-          },
-          grid: {
-            color: '#5c5c5c',
           },
         },
         y: {
@@ -166,13 +178,14 @@ const createChart = () => {
             display: true,
             text: '1 - P(ξ ≤ x)',
           },
+          grid: {
+            color: getComputedStyle(document.documentElement)
+                  .getPropertyValue('--grid-color').trim(),
+          },
           min: 0,
           max: 1,
           ticks: {
             stepSize: 0.1,
-          },
-          grid: {
-            color: '#5c5c5c',
           },
         },
       },
@@ -215,6 +228,30 @@ watch(
     }
   },
   { deep: true }
+);
+
+watch(
+  () => [theme.currentTheme, language.currentLanguage],
+  ([newTheme, newLanguage], [oldTheme, oldLanguage]) => {
+    if (cdfChart) {
+      if (newTheme !== oldTheme) {
+        cdfChart.destroy();
+        createChart();
+      }
+      if (newLanguage !== oldLanguage) {
+        cdfChart.options.plugins.title.text = t('beta.cdf.chart-title');
+        cdfChart.data.datasets[0].label = t('beta.cdf.est-cdf-min');
+        cdfChart.data.datasets[1].label = t('beta.cdf.est-cdf-max');
+        cdfChart.data.datasets[2].label = t('beta.cdf.cdf-min');
+        cdfChart.data.datasets[3].label = t('beta.cdf.cdf-max');
+        cdfChart.data.datasets[4].label = t('beta.cdf.predicted-cdf');
+        if (beta.testMode) {
+          cdfChart.data.datasets[5].label = t('beta.cdf.test-mode-cdf');
+        }
+        cdfChart.update();
+      }
+    }
+  }
 );
 
 </script>

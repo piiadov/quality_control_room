@@ -12,8 +12,8 @@
   "home": {
     "title": "Escolha a ferramenta",
     "defect-rate-btn": "Analisador de defeitos",
-    "beta-profile-btn": "Beta(\u03B1, \u03B2) Profiler",
-    "normal-profile-btn": "Normal(\u03BC, \u03C3) Profiler",
+    "beta-profile-btn": "Beta(\u03B1, \u03B2) Perfilador",
+    "normal-profile-btn": "Normal(\u03BC, \u03C3) Perfilador",
     "help-link": {
       "begin-text": "ou consulte",
       "link-text": "a documentação",
@@ -22,6 +22,68 @@
   },
   "sidebar": {
     "tools": "Ferramentas",
-    "results": "Resultados"
+    "results": "Resultados",
+    "clean": "Limpar",
+    "export": "Exportar",
+    "gen-report": "Gerar Relatório",
+    "virt-engineer": "Engenheiro Virtual"
+  },
+
+  "beta": {
+    "title": "Perfil de Qualidade usando Distribuição Beta",
+    "inputs": {
+      "test-mode": "Modo de teste",
+      "discretization": "Discretização",
+      "min-value": "Valor Mínimo",
+      "max-value": "Valor Máximo",
+      "discretization-placeholder": "Digite um inteiro",
+      "min-value-placeholder": "Digite um número",
+      "max-value-placeholder": "Digite um número",
+      "sampling-data": "Dados de amostragem",
+      "sampling-data-placeholder": "Digite números separados por nova linha, espaço ou vírgula",
+      "load-data": "carregar do arquivo",
+      "analyze": "Analisar"
+    },
+    "freq": {
+      "bins-number": "Número de bins",
+      "chart-title": "Distribuição de Contagens",
+      "chart-x-label": "Bins",
+      "chart-y-label": "Contagens"
+    },
+    "cdf": {
+      "chart-title": "CDF Complementar",
+      "est-cdf-min": "Estimado CDF Min",
+      "est-cdf-max": "Estimado CDF Max",
+      "cdf-min": "CDF Min",
+      "cdf-max": "CDF Max",
+      "predicted-cdf": "CDF Previsto",
+      "test-mode-cdf": "Verdadeira CDF (modo de teste)"
+    },
+    "pdf": {
+      "chart-title": "PDF",
+      "pdf-min": "PDF Min",
+      "pdf-max": "PDF Max",
+      "predicted-pdf": "PDF Previsto",
+      "test-mode-pdf": "Verdadeira PDF (modo de teste)"
+    },
+    "params": {
+      "title": "Beta - Distribuição",
+      "min-quality": "Qualidade Mínima",
+      "max-quality": "Qualidade Máxima",
+      "predicted-quality": "Qualidade Prevista",
+      "test-mode-quality": "Qualidade Verdadeira (modo de teste)"
+    },
+    "chi2": {
+      "title": "Teste",
+      "p-value":"p-valor",
+      "decision": "Decisão",
+      "bins-number": "Número de bins",
+      "critical": "Valor crítico",
+      "value": "",
+      "predicted-quality": "Qualidade Prevista",
+      "min-quality": "Qualidade Mínima",
+      "max-quality": "Qualidade Máxima", 
+      "test-mode-quality": "Qualidade Verdadeira (modo de teste)"
+    }
   }
 }
