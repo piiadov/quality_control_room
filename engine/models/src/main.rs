@@ -1,6 +1,8 @@
 use libmodels::train::*;
 use libmodels::wrapper::*;
 use std::time::Instant;
+use std::fs::{OpenOptions, metadata};
+use csv::WriterBuilder;
 
 const CONFIG_PATH: &str = "/home/vp/GitHub/quality_control_room/data/config.json";
 
@@ -11,11 +13,11 @@ fn main() {
 
     let alpha_res: usize = 100;
     let beta_res: usize = 100;
-    let dist_train_size: usize = 200; // Number of examples for each pair (a,b)
+    let dist_train_size: usize = 100; // Number of examples for each pair (a,b)
     let rows = alpha_res * beta_res * dist_train_size;
     println!("Data size: {} rows", rows);
 
-    let population_size: usize = 5000; // Large number in comparison with samples number
+    let population_size: usize = 3000; // Large number in comparison with samples number
     let alpha_bounds = [0.1, 10.0];
     let beta_bounds = [0.1, 10.0];
     let init_params = [0.1, 0.1];
@@ -24,14 +26,24 @@ fn main() {
                                    beta_bounds, beta_res, dist_train_size);
     let y = flat_vector::<2>(y); // XGBoost works with f32 (c_float)
 
-    // Create rmse.csv file with headers
-    let mut wtr = csv::Writer::from_path(format!("{}/rmse.csv", folder_path))
-        .expect("Failed to create rmse.csv");
-    wtr.write_record(&["sample_num", "a_rmse", "b_rmse"])
-        .expect("Failed to write headers to rmse.csv");
-    wtr.flush().expect("Failed to flush csv writer");
+    let file_path = format!("{}/rmse.csv", folder_path);
+    let file_exists = metadata(&file_path).is_ok();
 
-    for sample_size in [10, 50] {
+    let file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&file_path)
+        .expect("Failed to open or create rmse.csv");
+    let mut wtr = WriterBuilder::new()
+        .has_headers(false) // Avoid writing headers again
+        .from_writer(file);
+    if !file_exists {
+        wtr.write_record(&["sample_num", "a_rmse", "b_rmse"])
+            .expect("Failed to write headers to rmse.csv");
+        wtr.flush().expect("Failed to flush csv writer");
+    }
+
+    for sample_size in [100] {
         println!("Sample size: {}", sample_size);
         let start = Instant::now();
 

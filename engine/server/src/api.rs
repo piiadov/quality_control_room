@@ -221,6 +221,12 @@ pub fn handle_calc(test_mode: bool, mut data: Vec<f64>, mut min_value: f64,
         fn_inference);
     response.predicted_beta_params = [pred[0] as f64, pred[1] as f64];
 
+    // Check if predicted beta-distribution parameters are valid
+    if pred[0] <= 0.0 || pred[1] <= 0.0 {
+        response.info = "Predicted beta-distribution parameters are invalid".to_string();
+        return response;
+    }
+
     // Get predicted CDF and PDF
     response.predicted_cdf = beta_cdf(q.clone(), pred[0] as f64, pred[1] as f64)
         .into_iter().map(|x| 1.0 - x).collect();

@@ -3,10 +3,8 @@ use nlopt::{Algorithm, Nlopt, SuccessState};
 use nlopt::SuccessState::Success;
 use nlopt::Target::Minimize;
 use rand::rng;
-// use rand_distr::num_traits::sign;
 use rand_distr::{Beta as RandBeta, Distribution};
 use rayon::prelude::*;
-//use serde::de;
 use statrs::distribution::{Discrete, Hypergeometric, Beta, 
     ContinuousCDF, Continuous, ChiSquared};
 use statrs::statistics::Statistics;
@@ -88,22 +86,20 @@ fn mse_cost(x: &[f64], _grad: Option<&mut [f64]>, user_data: &mut (&Vec<f64>, &V
 
 pub fn conf_int(population_size: usize, sample_size: usize) -> (Vec<f64>, Vec<f64>) {
     // Vector of conf intervals [quality_min, quality_max]
-    let mut cdf_min: Vec<f64> = Vec::with_capacity(sample_size+2);
-    cdf_min.resize(sample_size+2, 0.0);
+
+    let mut cdf_min: Vec<f64> = vec![0.0; sample_size+2];
     cdf_min[0] = 1.0;
-    cdf_min[sample_size+1] = 0.0;
-    let mut cdf_max: Vec<f64> = Vec::with_capacity(sample_size+2);
-    cdf_max.resize(sample_size+2, 0.0);
+
+    let mut cdf_max: Vec<f64> = vec![0.0; sample_size+2];
     cdf_max[0] = 1.0;
-    cdf_max[sample_size+1] = 0.0;
 
     for (i,k) in (1..=sample_size).rev().enumerate() {
         (cdf_min[i+1], cdf_max[i+1])
-            = quality_interval(population_size as u64, sample_size as u64, k as u64, 10.0);
+            = quality_interval(population_size as u64, sample_size as u64, 
+                k as u64, 10.0);
     }
     (cdf_min, cdf_max)
 }
-
 
 pub fn target_prepare(alpha_bounds: [f64; 2], alpha_res: usize,
                       beta_bounds: [f64; 2], beta_res: usize,
@@ -236,7 +232,7 @@ pub fn beta_cdf(domain: Vec<f64>, alpha: f64, beta: f64) -> Vec<f64> {
     // and calculate the CDF for the given domain
     domain.iter().map(|&x| {
         let dist = Beta::new(alpha, beta)
-            .expect("Invalid Beta distribution parameters");
+            .expect(format!("Invalid Beta distribution parameters: alpha={}, beta={}", alpha, beta).as_str());
         dist.cdf(x)
     }).collect()
 }
