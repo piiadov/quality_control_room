@@ -14,5 +14,19 @@ export default defineConfig({
       ],
     },
   },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    assets: {
+      css: {
+        mimeType: 'text/css',
+      },
+      js: {
+        mimeType: 'application/javascript',
+      },
+      html: {
+        mimeType: 'text/html',
+      },
+    },
+  },
 })
-
