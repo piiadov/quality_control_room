@@ -32,6 +32,6 @@
         "random_state": "123"
     },
     "paths": {
-        "data_folder": "/home/vp/GitHub/quality_control_room/data/inferences"
+        "data_folder": "/home/vp/quality_control_room/data/inferences"
     }
 }

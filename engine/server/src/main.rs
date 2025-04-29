@@ -10,8 +10,8 @@ async fn main() {
         .map(|ws: ws::Ws| ws.on_upgrade(handle_socket));
 
     // Start the server on port 8080
-    println!("Starting WebSocket server on ws://127.0.0.1:8080/quality");
-    warp::serve(ws_route).run(([127, 0, 0, 1], 8080)).await;
+    println!("Starting WebSocket server");
+    warp::serve(ws_route).run(([191, 252, 60, 9], 8081)).await;
 }
 
 async fn handle_socket(websocket: ws::WebSocket) {
