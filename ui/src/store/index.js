@@ -42,7 +42,7 @@ export const sidebarStore = defineStore('sidebar', {
 
 export const settingsStore = defineStore('settings', {
     state: () => ({
-        backendUrl: 'ws://localhost:8080/quality',
+        backendUrl: 'ws://191.252.60.9:8080/quality',
         connectTimeout: 5000,
     }),
 })
