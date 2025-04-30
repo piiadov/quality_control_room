@@ -4,14 +4,16 @@ use warp::{Filter, ws};
 
 #[tokio::main]
 async fn main() {
+    // Server IP
+    let server_addr = ([127, 0, 0, 1], 8081);
     // WebSocket route
     let ws_route = warp::path("quality")
         .and(warp::ws())
         .map(|ws: ws::Ws| ws.on_upgrade(handle_socket));
 
-    // Start the server on port 8080
-    println!("Starting WebSocket server");
-    warp::serve(ws_route).run(([191, 252, 60, 9], 8081)).await;
+    println!("Quality server started on ws://{}.{}.{}.{}:{}", server_addr.0[0], server_addr.0[1], 
+        server_addr.0[2], server_addr.0[3], server_addr.1);
+    warp::serve(ws_route).run(server_addr).await;
 }
 
 async fn handle_socket(websocket: ws::WebSocket) {

@@ -2,6 +2,14 @@ import { defineStore } from "pinia";
 import i18n from '../services/i18n';
 import JSZip from "jszip";
 
+export const settingsStore = defineStore('settings', {
+    state: () => ({
+        //backendUrl: 'ws://191.252.60.9:8081/quality',
+        backendUrl: 'ws://127.0.0.1:8081/quality',
+        connectTimeout: 5000,
+    }),
+})
+
 export const themeStore = defineStore("theme", {
     state: () => ({
         currentTheme: localStorage.getItem('theme') || 'dark',
@@ -39,13 +47,6 @@ export const sidebarStore = defineStore('sidebar', {
         activeTool: undefined,
     }),
 });
-
-export const settingsStore = defineStore('settings', {
-    state: () => ({
-        backendUrl: 'ws://191.252.60.9:8081/quality',
-        connectTimeout: 5000,
-    }),
-})
 
 export const betaStore = defineStore('beta', {
     state: () => ({

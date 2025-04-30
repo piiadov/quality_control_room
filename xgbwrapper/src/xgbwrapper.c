@@ -4,7 +4,7 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
-#include </home/vp/GitHub/xgboost/include/xgboost/c_api.h>
+#include </home/vp/xgboost/include/xgboost/c_api.h>
 
 void generate_data_2cols(float* x, float* y, int rows, int x_cols) {
     // Generate random x values and calculate y values

@@ -5,7 +5,7 @@ use std::fs::File;
 use std::path::Path;
 use approx::assert_abs_diff_eq;
 
-const CONFIG_PATH: &str = "/home/vp/GitHub/quality_control_room/data/config.json";
+const CONFIG_PATH: &str = "/home/vp/quality_control_room/data/config.json";
 
 fn read_csv_file<const N: usize>(path: String) -> Vec<[f64; N]>
 where

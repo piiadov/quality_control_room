@@ -8,7 +8,7 @@
 #include <string.h>
 #include "../src/xgbwrapper.h"
 #include <limits.h>
-#include </home/vp/GitHub/xgboost/include/xgboost/c_api.h>
+#include </home/vp/xgboost/include/xgboost/c_api.h>
 
 // Function declarations
 void test_shuffle();
