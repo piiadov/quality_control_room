@@ -4,7 +4,7 @@ use std::time::Instant;
 use std::fs::{OpenOptions, metadata};
 use csv::WriterBuilder;
 
-const CONFIG_PATH: &str = "/home/vp/GitHub/quality_control_room/data/config.json";
+const CONFIG_PATH: &str = "/home/vp/quality_control_room/data/config.json";
 
 fn main() {
     let config = read_config(CONFIG_PATH.to_string());

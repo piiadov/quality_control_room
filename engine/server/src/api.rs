@@ -2,7 +2,7 @@ use models::wrapper::*;
 use models::train::*;
 use serde::{Deserialize, Serialize};
 
-const CONFIG_PATH: &str = "/home/vp/GitHub/quality_control_room/data/config.json";
+const CONFIG_PATH: &str = "/home/vp/quality_control_room/data/config.json";
 
 #[derive(Deserialize, Debug)]
 pub struct ApiRequest {
