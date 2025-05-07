@@ -3,7 +3,7 @@
     "configurePresets": [
         {
             "name": "debug with gcc",
-            "displayName": "GCC 14.2.0 x86_64-linux-gnu",
+            "displayName": "Debug",
             "description": "Using compilers: C = /usr/bin/gcc, CXX = /usr/bin/g++",
             "binaryDir": "${sourceDir}/out/build/${presetName}",
             "cacheVariables": {
@@ -14,7 +14,7 @@
         },
         {
             "name": "release with gcc",
-            "displayName": "GCC 14.2.0 x86_64-linux-gnu Release",
+            "displayName": "Release",
             "description": "Using compilers: C = /usr/bin/gcc, CXX = /usr/bin/g++ with optimizations",
             "binaryDir": "${sourceDir}/out/build/${presetName}",
             "cacheVariables": {
