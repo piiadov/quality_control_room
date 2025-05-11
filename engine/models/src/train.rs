@@ -3,11 +3,43 @@ use nlopt::{Algorithm, Nlopt, SuccessState};
 use nlopt::SuccessState::Success;
 use nlopt::Target::Minimize;
 use rand::rng;
-use rand_distr::{Beta as RandBeta, Distribution};
+use rand::seq::SliceRandom;
+use rand_distr::{Beta as RandBeta, Normal as RandNormal, Distribution};
 use rayon::prelude::*;
-use statrs::distribution::{Discrete, Hypergeometric, Beta, 
+use statrs::distribution::{Discrete, Hypergeometric, Beta, Normal,
     ContinuousCDF, Continuous, ChiSquared};
 use statrs::statistics::Statistics;
+use std::fmt;
+
+#[derive(PartialEq, Clone)]
+pub enum DistributionType {
+    Beta,
+    Normal,
+}
+
+impl fmt::Display for DistributionType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DistributionType::Beta => write!(f, "Beta"),
+            DistributionType::Normal => write!(f, "Normal"),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum RandDistribution {
+    Beta(RandBeta<f64>),
+    Normal(RandNormal<f64>),
+}
+
+impl Distribution<f64> for RandDistribution {
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+        match self {
+            RandDistribution::Beta(beta) => beta.sample(rng),
+            RandDistribution::Normal(normal) => normal.sample(rng),
+        }
+    }
+}
 
 fn hypergeometric_pmf(n_total: u64, k_total: u64, n: u64, k: u64) -> f64 {
     // Slow but can work with large numbers,
@@ -66,19 +98,36 @@ pub fn quality_interval(population_size: u64, sample_size: u64,
     (quality_min, quality_max)
 }
 
-fn mse_cost(x: &[f64], _grad: Option<&mut [f64]>, user_data: &mut (&Vec<f64>, &Vec<f64>)) -> f64 {
-    if x[0] <= 0.0 || x[1] <= 0.0 {
-        return 1e10;
-    }
-    let beta_dist = match Beta::new(x[0], x[1]) {
-        Ok(b) => b,
-        Err(_) => return 1e10,
-    };
-    let mut sse = 0.0;
+fn mse_cost(x: &[f64], _grad: Option<&mut [f64]>, user_data: &mut (&Vec<f64>, &Vec<f64>, &DistributionType)) -> f64 {
+    
+    let kind = user_data.2;
     let points_num = user_data.0.len();
-    for i in 0 .. points_num {
-        let pred = 1.0 - beta_dist.cdf(user_data.0[i]);
-        sse += (pred - user_data.1[i]).powi(2);
+    let mut sse = 0.0;
+    
+    // Refactor this part to avoid code duplication, use implementation in DistributionType
+    if *kind == DistributionType::Beta {
+        if x[0] <= 0.0 || x[1] <= 0.0 {
+            return 1e10;
+        }
+        let dist = match Beta::new(x[0], x[1]) {
+            Ok(b) => b,
+            Err(_) => return 1e10,
+        };
+        for i in 0 .. points_num {
+            let pred = 1.0 - dist.cdf(user_data.0[i]);
+            sse += (pred - user_data.1[i]).powi(2);
+        }
+    } else if *kind == DistributionType::Normal {
+        let dist = match Normal::new(x[0], x[1]) {
+            Ok(b) => b,
+            Err(_) => return 1e10,
+        };
+        for i in 0 .. points_num {
+            let pred = 1.0 - dist.cdf(user_data.0[i]);
+            sse += (pred - user_data.1[i]).powi(2);
+        }
+    } else {
+        panic!("mse_cost: Unknown distribution type");
     }
 
     sse / points_num as f64
@@ -101,27 +150,39 @@ pub fn conf_int(population_size: usize, sample_size: usize) -> (Vec<f64>, Vec<f6
     (cdf_min, cdf_max)
 }
 
-pub fn target_prepare(alpha_bounds: [f64; 2], alpha_res: usize,
-                      beta_bounds: [f64; 2], beta_res: usize,
-                      dist_train_size: usize) -> (Vec<[f64; 2]>, Vec<RandBeta<f64>>){
-    let alpha_range = generate_range(alpha_bounds, alpha_res);
-    let beta_range = generate_range(beta_bounds, beta_res);
-    let iter_num = alpha_res * beta_res * dist_train_size;
+pub fn target_prepare(kind: DistributionType, params_res: [usize;2],
+                      dist_train_size: usize) -> (Vec<[f64; 2]>, Vec<RandDistribution>){
+    
+    let bounds = param_bounds(kind.clone());
+    let p1_range = generate_range(bounds[0], params_res[0]);
+    let p2_range = generate_range(bounds[1], params_res[1]);
+    let iter_num = params_res[0] * params_res[1] * dist_train_size;
 
-    // Allocate main data structures
-    let mut dist: Vec<RandBeta<f64>> = Vec::with_capacity(iter_num);
+    let mut dist: Vec<RandDistribution> = Vec::with_capacity(iter_num);
+    
     let mut y: Vec<[f64; 2]> = Vec::with_capacity(iter_num);
     y.resize(iter_num, [0.0, 0.0]);
 
     let mut j = 0;
-    (0..alpha_range.len() * beta_range.len()).for_each(|i|{
-        let alpha = alpha_range[i / beta_range.len()];
-        let beta = beta_range[i % beta_range.len()];
+    (0 .. p1_range.len() * p2_range.len()).for_each(|i|{
+        let p1 = p1_range[i / p2_range.len()];
+        let p2 = p2_range[i % p2_range.len()];
         (0 .. dist_train_size).for_each(|_|{
-            y[j][0] = alpha;
-            y[j][1] = beta;
-            dist.push(RandBeta::new(alpha, beta)
-                .expect("Invalid Beta distribution parameters"));
+            y[j][0] = p1;
+            y[j][1] = p2;
+            if kind == DistributionType::Beta {
+                dist.push(RandDistribution::Beta(
+                    RandBeta::new(p1, p2)
+                    .expect("Invalid Beta distribution parameters"),
+                ));
+            } else if kind == DistributionType::Normal {
+                dist.push(RandDistribution::Normal(
+                    RandNormal::new(p1, p2)
+                    .expect("Invalid Normal distribution parameters"),
+                ));
+            } else {
+                panic!("target_prepare: Unknown distribution type");
+            }
             j += 1;
         });
     });
@@ -129,31 +190,60 @@ pub fn target_prepare(alpha_bounds: [f64; 2], alpha_res: usize,
 }
 
 pub fn features_prepare_nm(sample_size: usize, cdf_min: Vec<f64>,
-                           cdf_max: Vec<f64>, dist: Vec<RandBeta<f64>>,
-                           alpha_bounds: [f64; 2], beta_bounds: [f64; 2],
-                           init_params: [f64;2]) -> Vec<[f64; 4]>{
+                           cdf_max: Vec<f64>, dist: Vec<RandDistribution>,
+                           kind: DistributionType) -> (Vec<[f64; 4]>, Vec<[f64; 2]>){
 
-    let iter_num = dist.len();
-    let mut x: Vec<[f64; 4]> = Vec::with_capacity(iter_num);
-    x.resize(iter_num, [0.0, 0.0, 0.0, 0.0]);
+    let iter_num: usize = dist.len();
+    let mut x: Vec<[f64; 4]> = vec![[0.0; 4]; iter_num];
+    let mut opt_stat: Vec<[(SuccessState, f64); 2]> = vec![[(Success,0.0); 2]; iter_num];
+    let mut sampling_params: Vec<[f64; 2]> = vec![[0.0; 2]; iter_num];
 
-    let mut opt_stat: Vec<[(SuccessState, f64); 2]> = Vec::with_capacity(iter_num);
-    opt_stat.resize(iter_num, [(Success,0.0), (Success,0.0)]);
+    let bounds = param_bounds(kind.clone());
+    let init_guess = init_guess(kind.clone());
 
-    // Interpolation domain for CDF [0.0 ... 1.0]
-    let q = generate_range([0.0, 1.0], 101);
+    // Interpolation domain for CDF
+    let q = dist_domain(kind.clone());
+
+    // "first" and "last" anchors for interpolation over all the domain
+    let anchors = [q[0], q[q.len()-1]];
+
     dist
         .par_iter()
         .zip(x.par_iter_mut())
         .zip(opt_stat.par_iter_mut())
-        .for_each(|((beta_dist, x_i), opt_stat_i)| {
+        .zip(sampling_params.par_iter_mut())
+        .for_each(|(((dist_i, x_i), opt_stat_i), sampling_params_i)| {
+            
             let mut rng = rng();
             let mut samples: Vec<f64> = Vec::with_capacity(sample_size+2);
-            samples.push(0.0);
+            
+            samples.push(anchors[0]);
             for _ in 1 .. sample_size + 1 {
-                samples.push(beta_dist.sample(&mut rng));
+                samples.push(dist_i.sample(&mut rng));
             }
-            samples.push(1.0);
+            samples.push(anchors[1]);
+
+            let slice = &samples[1..samples.len() - 1];
+            let mean: f64 = slice.iter().sum::<f64>() / slice.len() as f64;
+            let var: f64 = slice.iter()
+                .map(|x| (x - mean).powi(2))
+                .sum::<f64>() / (slice.len() as f64 - 1.0);
+            let std = var.sqrt();
+
+            if kind == DistributionType::Beta {
+                let coeff = mean * (1.0 - mean) / var - 1.0;
+                let alpha = coeff * mean;
+                let beta = coeff * (1.0 - mean);
+                if alpha < 0.0 || beta < 0.0 {
+                    panic!("features_prepare_nm: Invalid sampling parameters: alpha={}, beta={}", alpha, beta);
+                }
+                *sampling_params_i = [alpha, beta];
+            } else if kind == DistributionType::Normal {
+                *sampling_params_i = [mean, std];
+            } else {
+                panic!("features_prepare_nm: Unknown distribution type");
+            }
+
             samples.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
             let cdf_min_int: Vec<f64> = interp_slice(&samples, &cdf_min, &q, &InterpMode::default());
@@ -161,38 +251,38 @@ pub fn features_prepare_nm(sample_size: usize, cdf_min: Vec<f64>,
 
             // Fit curves
             let mut opt = Nlopt::new(Algorithm::Neldermead, 2,
-                                     mse_cost, Minimize, (&q, &cdf_min_int));
+                                     mse_cost, Minimize, (&q, &cdf_min_int, &kind));
 
-            opt.set_lower_bounds(&[alpha_bounds[0]*0.7, beta_bounds[0]*0.7]).unwrap();
-            opt.set_upper_bounds(&[alpha_bounds[1]*1.3, beta_bounds[1]*1.3]).unwrap();
+            opt.set_lower_bounds(&[bounds[0][0]*0.7, bounds[1][0]*0.7]).unwrap();
+            opt.set_upper_bounds(&[bounds[0][1]*1.3, bounds[1][1]*1.3]).unwrap();
 
             opt.set_maxeval(10000).unwrap();
             opt.set_xtol_abs1(1e-20).unwrap();
-            let mut params_min = init_params.clone();
+            let mut params_min = init_guess.clone();
             let stat_min = opt.optimize(&mut params_min)
                 .expect("Fitting failed");
 
             let mut opt = Nlopt::new(Algorithm::Neldermead, 2,
-                                     mse_cost, Minimize, (&q, &cdf_max_int));
+                                     mse_cost, Minimize, (&q, &cdf_max_int, &kind));
 
-            opt.set_lower_bounds(&[alpha_bounds[0]*0.7, beta_bounds[0]*0.7]).unwrap();
-            opt.set_upper_bounds(&[alpha_bounds[1]*1.3, beta_bounds[1]*1.3]).unwrap();
+            opt.set_lower_bounds(&[bounds[0][0]*0.7, bounds[1][0]*0.7]).unwrap();
+            opt.set_upper_bounds(&[bounds[0][1]*1.3, bounds[1][1]*1.3]).unwrap();
 
             opt.set_maxeval(10000).unwrap();
             opt.set_xtol_abs1(1e-20).unwrap();
-            let mut params_max = [1.0f64, 1.0f64];
+            let mut params_max = init_guess.clone();
             let stat_max = opt.optimize(&mut params_max)
                 .expect("Fitting failed");
 
             *x_i = [params_min[0], params_min[1], params_max[0], params_max[1]];
             *opt_stat_i = [stat_min, stat_max];
         });
-    x
+    (x, sampling_params)
 }
 
 pub fn cdf_fitting(data: Vec<f64>, cdf_min: Vec<f64>, cdf_max: Vec<f64>,
                    alpha_bounds: [f64; 2], beta_bounds: [f64; 2],
-                   init_params: [f64;2], interp_domain: Vec<f64>) -> [f64;4]{
+                   init_params: [f64;2], interp_domain: Vec<f64>, kind: DistributionType) -> [f64;4]{
     let mut samples: Vec<f64> = Vec::with_capacity(data.len()+2);
     samples.push(0.0);
     samples.extend(data);
@@ -205,7 +295,7 @@ pub fn cdf_fitting(data: Vec<f64>, cdf_min: Vec<f64>, cdf_max: Vec<f64>,
                                              &interp_domain, &InterpMode::default());
 
     let mut opt = Nlopt::new(Algorithm::Neldermead, 2,
-                             mse_cost, Minimize, (&interp_domain, &cdf_min_int));
+                             mse_cost, Minimize, (&interp_domain, &cdf_min_int, &kind));
     opt.set_lower_bounds(&[alpha_bounds[0]*0.7, beta_bounds[0]*0.7]).unwrap();
     opt.set_upper_bounds(&[alpha_bounds[1]*1.3, beta_bounds[1]*1.3]).unwrap();
     opt.set_maxeval(10000).unwrap();
@@ -215,7 +305,7 @@ pub fn cdf_fitting(data: Vec<f64>, cdf_min: Vec<f64>, cdf_max: Vec<f64>,
         .expect("Fitting failed");
 
     let mut opt = Nlopt::new(Algorithm::Neldermead, 2,
-                             mse_cost, Minimize, (&interp_domain, &cdf_max_int));
+                             mse_cost, Minimize, (&interp_domain, &cdf_max_int, &kind));
     opt.set_lower_bounds(&[alpha_bounds[0]*0.7, beta_bounds[0]*0.7]).unwrap();
     opt.set_upper_bounds(&[alpha_bounds[1]*1.3, beta_bounds[1]*1.3]).unwrap();
     opt.set_maxeval(10000).unwrap();
@@ -310,4 +400,43 @@ pub fn expected_freq_beta(alpha: f64, beta: f64, bins: &Vec<f64>, sample_size: u
         expected_freq[i] = (dist.cdf(upper_bound) - dist.cdf(lower_bound)) * sample_size as f64;
     }
     expected_freq
+}
+
+pub fn param_bounds(kind: DistributionType) -> [[f64; 2]; 2] {
+    if kind == DistributionType::Beta {
+        return [[0.1, 10.0], [0.1, 10.0]];
+    }
+    else if kind == DistributionType::Normal {
+        return [[1e-3, 1.0-1e-3], [1e-3, 1.0/6.0]];
+    }
+    panic!("param_bounds: Unknown distribution type");
+}
+
+pub fn init_guess(kind: DistributionType) -> [f64; 2] {
+    if kind == DistributionType::Beta {
+        return [0.1, 0.1];
+    }
+    else if kind == DistributionType::Normal {
+        return [0.5, 1.0/6.0];
+    }
+    panic!("init_guess: Unknown distribution type");
+}
+
+pub fn dist_domain(kind: DistributionType) -> Vec<f64> {
+    if kind == DistributionType::Beta {
+        return generate_range([0.0, 1.0], 101);
+    }
+    else if kind == DistributionType::Normal {
+        return generate_range([-0.5, 1.5], 201);
+    }
+    panic!("cdf_domain: Unknown distribution type");
+}
+
+pub fn split_data(ratio: f64, size: usize) -> (Vec<u64>, Vec<u64>) {
+    let mut rng = rng();
+    let mut indices: Vec<u64> = (0..size as u64).collect();
+    indices.shuffle(&mut rng);
+    let split_index = (ratio * size as f64) as usize;
+    let (train_indices, test_indices) = indices.split_at(split_index);
+    (train_indices.to_vec(), test_indices.to_vec())
 }

@@ -122,7 +122,7 @@ pub fn c_split_data(x: Vec<f32>, y: Vec<f32>, rows: usize,
                    x_cols as c_int, y_cols as c_int, rows as c_int, rows_train as c_int);
     }
 
-    (x_train, y_train, x_test, y_test)
+    (x_train, y_train, x_test, y_test) // Add y_sampling
 }
 
 pub fn c_generate_data_2cols(rows: usize, x_cols: usize) -> (Vec<f32>, Vec<f32>) {
