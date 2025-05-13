@@ -234,10 +234,11 @@ pub fn features_prepare_nm(sample_size: usize, cdf_min: Vec<f64>,
                 let coeff = mean * (1.0 - mean) / var - 1.0;
                 let alpha = coeff * mean;
                 let beta = coeff * (1.0 - mean);
-                if alpha < 0.0 || beta < 0.0 {
-                    panic!("features_prepare_nm: Invalid sampling parameters: alpha={}, beta={}", alpha, beta);
+                if alpha <= 0.0 || beta <= 0.0 {
+                    *sampling_params_i = [1e-3, 1e-3];
+                } else {
+                    *sampling_params_i = [alpha, beta];
                 }
-                *sampling_params_i = [alpha, beta];
             } else if kind == DistributionType::Normal {
                 *sampling_params_i = [mean, std];
             } else {
@@ -432,11 +433,39 @@ pub fn dist_domain(kind: DistributionType) -> Vec<f64> {
     panic!("cdf_domain: Unknown distribution type");
 }
 
-pub fn split_data(ratio: f64, size: usize) -> (Vec<u64>, Vec<u64>) {
+pub fn split_data(ratio: f64, size: usize) -> (Vec<usize>, Vec<usize>) {
     let mut rng = rng();
-    let mut indices: Vec<u64> = (0..size as u64).collect();
+    let mut indices: Vec<usize> = (0..size).collect();
     indices.shuffle(&mut rng);
     let split_index = (ratio * size as f64) as usize;
     let (train_indices, test_indices) = indices.split_at(split_index);
+    assert_eq!(train_indices.len() + test_indices.len(), size,
+        "train_indices.len() + test_indices.len() != size");
     (train_indices.to_vec(), test_indices.to_vec())
+}
+
+pub fn calculate_rmse(y_test: &Vec<[f64; 2]>, y_pred: &Vec<[f64; 2]>) -> [f64; 2] {
+    assert_eq!(y_test.len(), y_pred.len(), "y_test and y_pred must have the same length");
+    let n = y_test.len();
+    let mut rmse = [0.0, 0.0];
+    for i in 0 .. n {
+        rmse[0] += (y_test[i][0] - y_pred[i][0]).powi(2);
+        rmse[1] += (y_test[i][1] - y_pred[i][1]).powi(2);
+    }
+    rmse[0] = (rmse[0] / n as f64).sqrt();
+    rmse[1] = (rmse[1] / n as f64).sqrt();
+    rmse
+}
+
+pub fn calculate_mae(y_test: &Vec<[f64; 2]>, y_pred: &Vec<[f64; 2]>) -> [f64; 2] {
+    assert_eq!(y_test.len(), y_pred.len(), "y_test and y_pred must have the same length");
+    let n = y_test.len();
+    let mut mae = [0.0, 0.0];
+    for i in 0 .. n {
+        mae[0] += (y_test[i][0] - y_pred[i][0]).abs();
+        mae[1] += (y_test[i][1] - y_pred[i][1]).abs();
+    }
+    mae[0] = mae[0] / n as f64;
+    mae[1] = mae[1] / n as f64;
+    mae
 }
