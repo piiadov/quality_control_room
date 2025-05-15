@@ -27,6 +27,7 @@ async fn handle_socket(websocket: ws::WebSocket) {
                     match request.command.as_str() {
                         "calc" => {
                             let response = handle_calc(
+                                request.kind,
                                 request.test_mode,
                                 request.data.unwrap_or(vec![]),
                                 request.min_value.unwrap_or(f64::NAN),
@@ -43,6 +44,7 @@ async fn handle_socket(websocket: ws::WebSocket) {
                         }
                         "update_bins" => {
                             let response = handle_update_bins(
+                                request.kind,
                                 request.data.unwrap_or(vec![]),
                                 request.min_value.unwrap_or(f64::NAN),
                                 request.max_value.unwrap_or(f64::NAN),

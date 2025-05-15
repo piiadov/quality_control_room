@@ -30,7 +30,9 @@ struct KVPair {
 pub struct Config {
     pub main_params: XGBParams,
     pub test_params: XGBParams,
-    pub paths: Paths,
+    pub n_min: i32,
+    pub n_max: i32,
+    pub n_step: usize,
 }
 
 #[derive(Debug, Deserialize, Clone)]

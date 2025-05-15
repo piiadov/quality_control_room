@@ -26,6 +26,26 @@ impl fmt::Display for DistributionType {
     }
 }
 
+pub enum FuncDistribution {
+    Beta(Beta),
+    Normal(Normal),
+}
+
+impl FuncDistribution {
+    fn cdf(&self, x: f64) -> f64 {
+        match self {
+            FuncDistribution::Beta(beta) => beta.cdf(x),
+            FuncDistribution::Normal(normal) => normal.cdf(x),
+        }
+    }
+    fn pdf(&self, x: f64) -> f64 {
+        match self {
+            FuncDistribution::Beta(beta) => beta.pdf(x),
+            FuncDistribution::Normal(normal) => normal.pdf(x),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub enum RandDistribution {
     Beta(RandBeta<f64>),
@@ -281,13 +301,14 @@ pub fn features_prepare_nm(sample_size: usize, cdf_min: Vec<f64>,
     (x, sampling_params)
 }
 
-pub fn cdf_fitting(data: Vec<f64>, cdf_min: Vec<f64>, cdf_max: Vec<f64>,
-                   alpha_bounds: [f64; 2], beta_bounds: [f64; 2],
-                   init_params: [f64;2], interp_domain: Vec<f64>, kind: DistributionType) -> [f64;4]{
+pub fn cdf_fitting(kind: DistributionType, data: Vec<f64>, cdf_min: Vec<f64>, cdf_max: Vec<f64>,
+                   bounds: [[f64; 2];2], init_guess: [f64;2], interp_domain: Vec<f64>) -> [f64;4]{
+    
+    let anchors = [interp_domain[0], interp_domain[interp_domain.len()-1]];
     let mut samples: Vec<f64> = Vec::with_capacity(data.len()+2);
-    samples.push(0.0);
+    samples.push(anchors[0]);
     samples.extend(data);
-    samples.push(1.0);
+    samples.push(anchors[1]);
     samples.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
     let cdf_min_int: Vec<f64> = interp_slice(&samples, &cdf_min,
@@ -296,52 +317,72 @@ pub fn cdf_fitting(data: Vec<f64>, cdf_min: Vec<f64>, cdf_max: Vec<f64>,
                                              &interp_domain, &InterpMode::default());
 
     let mut opt = Nlopt::new(Algorithm::Neldermead, 2,
-                             mse_cost, Minimize, (&interp_domain, &cdf_min_int, &kind));
-    opt.set_lower_bounds(&[alpha_bounds[0]*0.7, beta_bounds[0]*0.7]).unwrap();
-    opt.set_upper_bounds(&[alpha_bounds[1]*1.3, beta_bounds[1]*1.3]).unwrap();
+            mse_cost, Minimize, (&interp_domain, &cdf_min_int, &kind));
+    
+    opt.set_lower_bounds(&[bounds[0][0]*0.7, bounds[1][0]*0.7]).unwrap();
+    opt.set_upper_bounds(&[bounds[0][1]*1.3, bounds[1][1]*1.3]).unwrap();
+
     opt.set_maxeval(10000).unwrap();
     opt.set_xtol_abs1(1e-20).unwrap();
-    let mut params_min = init_params.clone();
+
+    let mut params_min = init_guess.clone();
     let _stat_min = opt.optimize(&mut params_min)
         .expect("Fitting failed");
 
     let mut opt = Nlopt::new(Algorithm::Neldermead, 2,
-                             mse_cost, Minimize, (&interp_domain, &cdf_max_int, &kind));
-    opt.set_lower_bounds(&[alpha_bounds[0]*0.7, beta_bounds[0]*0.7]).unwrap();
-    opt.set_upper_bounds(&[alpha_bounds[1]*1.3, beta_bounds[1]*1.3]).unwrap();
+                mse_cost, Minimize, (&interp_domain, &cdf_max_int, &kind));
+
+    opt.set_lower_bounds(&[bounds[0][0]*0.7, bounds[1][0]*0.7]).unwrap();
+    opt.set_upper_bounds(&[bounds[0][1]*1.3, bounds[1][1]*1.3]).unwrap();
+
     opt.set_maxeval(10000).unwrap();
     opt.set_xtol_abs1(1e-20).unwrap();
-    let mut params_max = [1.0f64, 1.0f64];
+    let mut params_max = init_guess.clone();
     let _stat_max = opt.optimize(&mut params_max)
         .expect("Fitting failed");
 
     [params_min[0], params_min[1], params_max[0], params_max[1]]
 }
 
-pub fn beta_cdf(domain: Vec<f64>, alpha: f64, beta: f64) -> Vec<f64> {
-    // Generate a beta distribution with the given parameters
+pub fn cdf(kind: DistributionType, domain: Vec<f64>, params: [f64;2]) -> Vec<f64> {
+    // Generate distribution with the given parameters
     // and calculate the CDF for the given domain
-    domain.iter().map(|&x| {
-        let dist = Beta::new(alpha, beta)
-            .expect(format!("Invalid Beta distribution parameters: alpha={}, beta={}", alpha, beta).as_str());
-        dist.cdf(x)
-    }).collect()
+    let dist: FuncDistribution;
+    if kind == DistributionType::Beta {
+        dist = FuncDistribution::Beta(Beta::new(params[0], params[1]).unwrap());
+    } else if kind == DistributionType::Normal {
+        dist = FuncDistribution::Normal(Normal::new(params[0], params[1]).unwrap());
+    } else {
+        panic!("cdf: Unknown distribution type");
+    }
+    domain.iter().map(|&x| dist.cdf(x)).collect()
 }
 
-pub fn beta_pdf(domain: Vec<f64>, alpha: f64, beta: f64) -> Vec<f64> {
+pub fn pdf(kind: DistributionType, domain: Vec<f64>, params: [f64;2]) -> Vec<f64> {
     // Generate a beta distribution with the given parameters
     // and calculate the PDF for the given domain
-    domain.iter().map(|&x| {
-        let dist = Beta::new(alpha, beta)
-            .expect("Invalid Beta distribution parameters");
-        dist.pdf(x)
-    }).collect()
+    let dist: FuncDistribution;
+    if kind == DistributionType::Beta {
+        dist = FuncDistribution::Beta(Beta::new(params[0], params[1]).unwrap());
+    } else if kind == DistributionType::Normal {
+        dist = FuncDistribution::Normal(Normal::new(params[0], params[1]).unwrap());
+    } else {
+        panic!("pdf: Unknown distribution type");
+    }
+    domain.iter().map(|&x| dist.pdf(x)).collect()
 }
 
-pub fn generate_beta_random_numbers(n: usize, alpha: f64, beta: f64) -> Vec<f64> {
-    let beta = RandBeta::new(alpha, beta).unwrap();
+pub fn generate_random_data(kind: DistributionType, n: usize, params: [f64;2]) -> Vec<f64> {
+    let dist: RandDistribution;
+    if kind == DistributionType::Beta {
+        dist = RandDistribution::Beta(RandBeta::new(params[0], params[1]).unwrap());
+    } else if kind == DistributionType::Normal {
+        dist = RandDistribution::Normal(RandNormal::new(params[0], params[1]).unwrap());
+    } else {
+        panic!("generate_random_data: Unknown distribution type");
+    }
     let mut rng = rng();
-    (0..n).map(|_| beta.sample(&mut rng)).collect()
+    (0..n).map(|_| dist.sample(&mut rng)).collect()
 }
 
 pub fn frequencies(bins: &Vec<f64>, data: &Vec<f64>) -> Vec<f64> {
@@ -389,10 +430,17 @@ pub fn chi2_test(observed: &Vec<f64>, expected: &Vec<f64>, significance: f64) ->
     (chi2, crit_value, p_value, decision)
 }
 
-pub fn expected_freq_beta(alpha: f64, beta: f64, bins: &Vec<f64>, sample_size: usize) -> Vec<f64> {
+pub fn expected_freq(kind: DistributionType, params: [f64;2], bins: &Vec<f64>, sample_size: usize) 
+        -> Vec<f64> {
 
-    let dist = Beta::new(alpha, beta)
-        .expect("Invalid Beta distribution parameters");
+    let dist: FuncDistribution;
+    if kind == DistributionType::Beta {
+        dist = FuncDistribution::Beta(Beta::new(params[0], params[1]).unwrap());
+    } else if kind == DistributionType::Normal {
+        dist = FuncDistribution::Normal(Normal::new(params[0], params[1]).unwrap());
+    } else {
+        panic!("expected_freq: Unknown distribution type");
+    }
 
     let mut expected_freq = vec![0.0; bins.len() - 1];
     for i in 0..(bins.len() - 1) {

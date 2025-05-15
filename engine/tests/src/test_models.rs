@@ -5,7 +5,7 @@ use std::fs::File;
 use std::path::Path;
 use approx::assert_abs_diff_eq;
 
-const CONFIG_PATH: &str = "/home/vp/quality_control_room/data/config.json";
+const DATA_PATH: &str = "/home/vp/quality_control_room/data";
 
 fn read_csv_file<const N: usize>(path: String) -> Vec<[f64; N]>
 where
@@ -34,7 +34,7 @@ where
 
 #[test]
 fn test_read_config() {
-    let config = read_config(CONFIG_PATH.to_string());
+    let config = read_config(format!("{}/config.json", DATA_PATH));
     println!("conf: {:?}", config);
 }
 
@@ -80,20 +80,21 @@ fn test_xgb() {
     let x_cols: usize = 4;
     let y_cols: usize = 2;
     let (x, y) = c_generate_data_2cols(rows, x_cols);
-    let config = read_config(CONFIG_PATH.to_string());
+    let config = read_config(format!("{}/config.json", DATA_PATH));
+    let inferences_folder = format!("{}/inferences", DATA_PATH);
+
 
     let split_ratio: f32 = 0.8;
     let (x_train, y_train, x_test, y_test)
         = c_split_data(x, y, rows, x_cols, y_cols, split_ratio);
 
-    let folder_path = config.paths.data_folder.clone();
-
     let rows_train = (split_ratio * rows as f32) as usize;
-    xgb_train(x_train, y_train, rows_train, x_cols, y_cols, config.test_params, folder_path, "xgb_test.json".to_string());
+    xgb_train(x_train, y_train, rows_train, x_cols, y_cols, config.test_params, 
+        inferences_folder.clone(), "xgb_test.json".to_string());
 
     let rows_test = rows - rows_train;
     let y_pred = xgb_predict(x_test, rows_test, x_cols, y_cols,
-                             config.paths.data_folder + "/xgb_test.json");
+                             format!("{}/xgb_test.json", inferences_folder));
 
     let rmse = c_calculate_rmse(y_test, y_pred, rows_test, y_cols);
     c_print_rmse(&rmse);
@@ -120,9 +121,8 @@ fn test_calculate_rmse() {
 
 #[test]
 fn test_xgb_loaded_data() {
-    let path = "/home/vp/GitHub/quality_control_room/data/".to_string();
-    let x = read_csv_file::<4>(path.clone() + "xtest.txt");
-    let y = read_csv_file::<2>(path + "ytest.txt");
+    let x = read_csv_file::<4>(format!("{}/xtest.txt", DATA_PATH));
+    let y = read_csv_file::<2>(format!("{}/ytest.txt", DATA_PATH));
 
     let x_cols = 4;
     let y_cols = 2;
@@ -130,21 +130,21 @@ fn test_xgb_loaded_data() {
     let x = flat_vector::<4>(x);
     let y = flat_vector::<2>(y);
 
-    let config = read_config(CONFIG_PATH.to_string());
+    let config = read_config(format!("{}/config.json", DATA_PATH));
+    let inferences_folder = format!("{}/inferences", DATA_PATH);
 
     let split_ratio: f32 = 0.8;
     let (x_train, y_train, x_test, y_test)
         = c_split_data(x, y, rows, x_cols, y_cols, split_ratio);
-
-    let folder_path = config.paths.data_folder.clone();
+    
     let rows_train = (split_ratio * rows as f32) as usize;
     xgb_train(x_train, y_train, rows_train, x_cols, y_cols, config.test_params,
-              folder_path, "xgb_test.json".to_string());
+              inferences_folder.clone(), "xgb_test.json".to_string());
 
     //let inference_path = config.paths.test_inference;
     let rows_test = rows - rows_train;
     let y_pred = xgb_predict(x_test, rows_test, x_cols, y_cols,
-                             config.paths.data_folder + "/xgb_test.json");
+                             format!("{}/xgb_test.json", inferences_folder));
 
     let rmse = c_calculate_rmse(y_test, y_pred, rows_test, y_cols);
     c_print_rmse(&rmse);
@@ -227,8 +227,8 @@ fn test_chi2() {
     // let expected: Vec<f64> = vec![40.0, 40.0, 20.0, 25.0];
 
     let bins = generate_range([0.0, 1.0], 11);
-    let observed = expected_freq_beta(2.0, 4.0, &bins, 30);
-    let expected = expected_freq_beta(2.0, 5.0, &bins, 30);
+    let observed = expected_freq(DistributionType::Beta, [2.0, 4.0], &bins, 30);
+    let expected = expected_freq(DistributionType::Beta, [2.0, 5.0], &bins, 30);
 
     let (chi2, crit_value, p_value, decision) 
         = chi2_test(&observed, &expected, 0.05);
@@ -239,5 +239,4 @@ fn test_chi2() {
     println!("Critical value: {}", crit_value);
     println!("P-value: {}", p_value);
     println!("Decision: {}", decision);
-
 }
