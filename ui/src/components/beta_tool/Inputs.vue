@@ -125,12 +125,12 @@ const submitData = () => {
         beta.fittedCdfMax = response.data.fitted_cdf_max;
         beta.fittedPdfMin = response.data.fitted_pdf_min;
         beta.fittedPdfMax = response.data.fitted_pdf_max;
-        beta.betaParamsMin = response.data.beta_params_min;
-        beta.betaParamsMax = response.data.beta_params_max;
-        beta.predictedBetaParams = response.data.predicted_beta_params;
+        beta.paramsMin = response.data.params_min;
+        beta.paramsMax = response.data.params_max;
+        beta.predictedParams = response.data.predicted_params;
         beta.predictedCdf = response.data.predicted_cdf;
         beta.predictedPdf = response.data.predicted_pdf;
-        beta.testModeBetaParams = response.data.test_mode_beta_params;
+        beta.testModeParams = response.data.test_mode_params;
         beta.testModeCdf = response.data.test_mode_cdf;
         beta.testModePdf = response.data.test_mode_pdf;
         beta.bins = response.data.bins;
@@ -223,7 +223,11 @@ watch(() => beta.testMode, (newValue) => {
           <label for="sampling-data" class="label-text">
             {{ t('beta.inputs.sampling-data') }}
           </label>
-          <span class="w-auto muted-link text-xs p-0" @click="loadFile">
+          <span
+            v-if="!beta.testMode"
+            class="w-auto muted-link text-xs p-0"
+            @click="loadFile"
+          >
             {{ t('beta.inputs.load-data') }}
           </span>
           <input
@@ -234,13 +238,17 @@ watch(() => beta.testMode, (newValue) => {
             @change="handleFileUpload"
           />
         </div>
-        <textarea v-model="beta.samplingData" id="sampling-data" rows="4"
+        <textarea v-if="beta.testMode" v-model="beta.samplingData" id="sampling-data" rows="4"
+          class="mt-2 w-full h-[12rem] input-text"
+          :placeholder="t('beta.inputs.sampling-data-placeholder')" 
+          :disabled="beta.inputDisabled" readonly>
+        </textarea>
+        <textarea v-else v-model="beta.samplingData" id="sampling-data" rows="4"
           class="mt-2 w-full h-[12rem] input-text"
           :placeholder="t('beta.inputs.sampling-data-placeholder')" 
           :disabled="beta.inputDisabled">
         </textarea>
       </div>
-
         <!-- Submit Button -->
       <div>
         <div class="text-center">

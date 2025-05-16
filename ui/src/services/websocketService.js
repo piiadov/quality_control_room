@@ -27,6 +27,7 @@ class WebSocketService {
         return new Promise((resolve, reject) => {
             const message = {
                 // Structure matched with the backend
+                kind: store.kind,
                 command: command,
                 test_mode: store.testMode,
                 population_size: store.batchVolume,
@@ -34,10 +35,10 @@ class WebSocketService {
                 max_value: store.maxValue,
                 data: store.samplingData,
                 bins_number: store.binsNumber,
-                beta_params_min: store.betaParamsMin,
-                beta_params_max: store.betaParamsMax,
-                predicted_beta_params: store.predictedBetaParams,
-                test_mode_beta_params: store.testModeBetaParams,
+                params_min: store.paramsMin,
+                params_max: store.paramsMax,
+                predicted_params: store.predictedParams,
+                test_mode_params: store.testModeParams,
             };
             // alert("Sending command: " + JSON.stringify(message));
             

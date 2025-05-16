@@ -29,10 +29,10 @@ const beta = betaStore();
             {{ t('beta.params.min-quality') }}
           </td>
           <td class="border p-2 text-center">
-            {{ beta.betaParamsMin[0].toFixed(1) }}
+            {{ beta.paramsMin[0].toFixed(1) }}
           </td>
           <td class="border p-2 text-center">
-            {{ beta.betaParamsMin[1].toFixed(1) }}
+            {{ beta.paramsMin[1].toFixed(1) }}
           </td>
         </tr>
         <tr>
@@ -40,10 +40,10 @@ const beta = betaStore();
             {{ t('beta.params.max-quality') }}
           </td>
           <td class="border p-2 text-center">
-            {{ beta.betaParamsMax[0].toFixed(1) }}
+            {{ beta.paramsMax[0].toFixed(1) }}
           </td>
           <td class="border p-2 text-center">
-            {{ beta.betaParamsMax[1].toFixed(1) }}
+            {{ beta.paramsMax[1].toFixed(1) }}
           </td>
         </tr>
         <tr>
@@ -51,10 +51,10 @@ const beta = betaStore();
             {{ t('beta.params.predicted-quality') }}
           </td>
           <td class="border p-2 text-center">
-            {{ beta.predictedBetaParams[0].toFixed(1) }}
+            {{ beta.predictedParams[0].toFixed(1) }}
           </td>
           <td class="border p-2 text-center">
-            {{ beta.predictedBetaParams[1].toFixed(1) }}
+            {{ beta.predictedParams[1].toFixed(1) }}
           </td>
         </tr>
         <tr v-if="beta.testMode === true">
@@ -62,10 +62,10 @@ const beta = betaStore();
             {{ t('beta.params.test-mode-quality') }}
           </td>
           <td class="border p-2 text-center">
-            {{ beta.testModeBetaParams[0].toFixed(1) }}
+            {{ beta.testModeParams[0].toFixed(1) }}
           </td>
           <td class="border p-2 text-center">
-            {{ beta.testModeBetaParams[1].toFixed(1) }}
+            {{ beta.testModeParams[1].toFixed(1) }}
           </td>
         </tr>
       </tbody>
