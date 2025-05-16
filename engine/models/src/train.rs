@@ -244,27 +244,9 @@ pub fn features_prepare_nm(sample_size: usize, cdf_min: Vec<f64>,
             samples.push(anchors[1]);
 
             let slice = &samples[1..samples.len() - 1];
-            let mean: f64 = slice.iter().sum::<f64>() / slice.len() as f64;
-            let var: f64 = slice.iter()
-                .map(|x| (x - mean).powi(2))
-                .sum::<f64>() / (slice.len() as f64 - 1.0);
-            let std = var.sqrt();
-
-            if kind == DistributionType::Beta {
-                let coeff = mean * (1.0 - mean) / var - 1.0;
-                let alpha = coeff * mean;
-                let beta = coeff * (1.0 - mean);
-                if alpha <= 0.0 || beta <= 0.0 {
-                    *sampling_params_i = [1e-3, 1e-3];
-                } else {
-                    *sampling_params_i = [alpha, beta];
-                }
-            } else if kind == DistributionType::Normal {
-                *sampling_params_i = [mean, std];
-            } else {
-                panic!("features_prepare_nm: Unknown distribution type");
-            }
-
+            let params = calculate_sampling_params(kind.clone(), slice.to_vec());
+            *sampling_params_i = [params[2], params[3]];
+            
             samples.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
             let cdf_min_int: Vec<f64> = interp_slice(&samples, &cdf_min, &q, &InterpMode::default());
@@ -349,6 +331,9 @@ pub fn cdf(kind: DistributionType, domain: Vec<f64>, params: [f64;2]) -> Vec<f64
     // and calculate the CDF for the given domain
     let dist: FuncDistribution;
     if kind == DistributionType::Beta {
+        if params[0] <= 0.0 || params[1] <= 0.0 {
+            return vec![];
+        }
         dist = FuncDistribution::Beta(Beta::new(params[0], params[1]).unwrap());
     } else if kind == DistributionType::Normal {
         dist = FuncDistribution::Normal(Normal::new(params[0], params[1]).unwrap());
@@ -363,6 +348,9 @@ pub fn pdf(kind: DistributionType, domain: Vec<f64>, params: [f64;2]) -> Vec<f64
     // and calculate the PDF for the given domain
     let dist: FuncDistribution;
     if kind == DistributionType::Beta {
+        if params[0] <= 0.0 || params[1] <= 0.0 {
+            return vec![];
+        }
         dist = FuncDistribution::Beta(Beta::new(params[0], params[1]).unwrap());
     } else if kind == DistributionType::Normal {
         dist = FuncDistribution::Normal(Normal::new(params[0], params[1]).unwrap());
@@ -516,4 +504,26 @@ pub fn calculate_mae(y_test: &Vec<[f64; 2]>, y_pred: &Vec<[f64; 2]>) -> [f64; 2]
     mae[0] = mae[0] / n as f64;
     mae[1] = mae[1] / n as f64;
     mae
+}
+
+pub fn calculate_sampling_params(kind: DistributionType, data: Vec<f64>) -> [f64;4] {
+    // Calculate the parameters of the distribution
+    // from the sampling data
+    let mean = data.iter().sum::<f64>() / data.len() as f64;
+    let var = data.iter()
+        .map(|x| (x - mean).powi(2))
+        .sum::<f64>() / (data.len() as f64 - 1.0);
+    let std = var.sqrt();
+    if kind == DistributionType::Beta {
+        let coeff = mean * (1.0 - mean) / var - 1.0;
+        let alpha = coeff * mean;
+        let beta = coeff * (1.0 - mean);
+        if alpha <= 0.0 || beta <= 0.0 {
+            return [mean, std, 0.0, 0.0];
+        }
+        return [mean, std, alpha, beta];
+    } else if kind == DistributionType::Normal {
+        return [mean, std, mean, std];
+    }
+    panic!("calculate_sampling_params: Unknown distribution type");
 }

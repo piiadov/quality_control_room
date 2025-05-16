@@ -14,10 +14,10 @@ pub struct ApiRequest {
     pub max_value: Option<f64>,
     pub population_size: Option<usize>,
     pub bins_number: Option<usize>,
-    pub beta_params_min: Option<[f64; 2]>,
-    pub beta_params_max: Option<[f64; 2]>,
-    pub predicted_beta_params: Option<[f64; 2]>,
-    pub test_mode_beta_params: Option<[f64; 2]>,
+    pub params_min: Option<[f64; 2]>,
+    pub params_max: Option<[f64; 2]>,
+    pub predicted_params: Option<[f64; 2]>,
+    pub test_mode_params: Option<[f64; 2]>,
 }
 
 #[derive(Serialize, Debug)]
@@ -64,6 +64,11 @@ pub struct Response {
     max_decision: bool,
     predicted_decision: bool,
     test_mode_decision: bool,
+    sampling_mu: f64,
+    sampling_sigma: f64,
+    sampling_params: [f64; 2],
+    sampling_cdf: Vec<f64>,
+    sampling_pdf: Vec<f64>,
 }
 
 impl Default for Response {
@@ -111,6 +116,11 @@ impl Default for Response {
             max_decision: false,
             predicted_decision: false,
             test_mode_decision: false,
+            sampling_mu: 0.0,
+            sampling_sigma: 0.0,
+            sampling_params: [0.0;2],
+            sampling_cdf: vec![],
+            sampling_pdf: vec![],
         }
     }
 }
@@ -172,6 +182,15 @@ pub fn handle_calc(kind_uint: u8, test_mode: bool, mut data: Vec<f64>, mut min_v
     response.min_value = min_value;
     response.max_value = max_value;
     response.data = data.clone();
+
+    // Calculate sampling parameters
+    let sampling_params = calculate_sampling_params(kind.clone(), data.clone());
+    response.sampling_mu = sampling_params[0];
+    response.sampling_sigma = sampling_params[1];
+    response.sampling_params = [sampling_params[2], sampling_params[3]];
+    response.sampling_cdf = cdf(kind.clone(), q.clone(), response.sampling_params)
+        .into_iter().map(|x| 1.0 - x).collect();
+    response.sampling_pdf = pdf(kind.clone(), q.clone(), response.sampling_params);
 
     // Select inference file by nearest suffix to data.len()
     let n_grid: Vec<i32> = (config.n_min..=config.n_max).step_by(config.n_step).collect();
