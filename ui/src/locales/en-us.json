@@ -52,26 +52,34 @@
     },
     "cdf": {
       "chart-title": "Complementary CDF",
-      "est-cdf-min": "Estimated CDF Min",
-      "est-cdf-max": "Estimated CDF Max",
+      "est-cdf-min": "Estimated Min",
+      "est-cdf-max": "Estimated Max",
       "cdf-min": "CDF Min",
       "cdf-max": "CDF Max",
-      "predicted-cdf": "Predicted CDF",
+      "predicted-cdf": "Predicted",
+      "sampling-cdf": "Sampling estimation",
       "test-mode-cdf": "True CDF (test mode)"
     },
     "pdf": {
       "chart-title": "PDF",
       "pdf-min": "PDF Min",
       "pdf-max": "PDF Max",
-      "predicted-pdf": "Predicted PDF",
+      "predicted-pdf": "Predicted",
+      "sampling-pdf": "Sampling estimation",
       "test-mode-pdf": "True PDF (test mode)"
     },
     "params": {
       "title": "Beta - Distribution",
-      "min-quality": "Minimum Quality",
-      "max-quality": "Maximum Quality",
-      "predicted-quality": "Predicted Quality",
-      "test-mode-quality": "True Quality (test mode)"
+      "min-quality": "Minimum quality",
+      "max-quality": "Maximum quality",
+      "predicted-quality": "Predicted quality",
+      "sampling-quality": "Sampling estimation",
+      "test-mode-quality": "True quality (test mode)",
+      "sampling-params": "Sampling parameters",
+      "mean": "Mean",
+      "std": "Standard deviation",
+      "scaled": "Scaled",
+      "native": "Native"
     },
     "chi2": {
       "title": "Test",
@@ -80,10 +88,11 @@
       "bins-number": "Number of bins",
       "critical": "Critical",
       "value": "- value",
-      "predicted-quality": "Predicted Quality",
-      "min-quality": "Minimum Quality",
-      "max-quality": "Maximum Quality", 
-      "test-mode-quality": "True Quality (test mode)"
+      "predicted-quality": "Predicted quality",
+      "min-quality": "Minimum quality",
+      "max-quality": "Maximum quality", 
+      "test-mode-quality": "True quality (test mode)",
+      "sampling-quality": "Quality by sampling"
     }
   }
 }

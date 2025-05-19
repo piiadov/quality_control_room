@@ -49,6 +49,15 @@ const predictedCdf = computed(() =>
   }))
 );
 
+const samplingCdf = computed(() =>
+  beta.samplingCdf && beta.samplingCdf.length > 0
+    ? beta.q.map((x, i) => ({
+        x: x,
+        y: beta.samplingCdf[i],
+      }))
+    : []
+);
+
 let testModeCdf = null;
 if (beta.testMode) {
   testModeCdf = computed(() =>
@@ -116,6 +125,23 @@ const createChart = () => {
           fill: false,
           pointRadius: 0,
         },
+        ...(samplingCdf.value && samplingCdf.value.length > 0
+          ? [
+              {
+                type: 'line',
+                label: t('beta.cdf.sampling-cdf'),
+                data: samplingCdf.value,
+                borderColor: getComputedStyle(document.documentElement)
+                  .getPropertyValue('--cdf-sampling-color').trim(),
+                backgroundColor: getComputedStyle(document.documentElement)
+                  .getPropertyValue('--cdf-sampling-color').trim(),
+                borderWidth: 2,
+                fill: false,
+                pointRadius: 0,
+              },
+            ]
+          : []
+        ),
         ...(beta.testMode
           ? [
               {
@@ -212,6 +238,7 @@ watch(
     fittedCdfMin,
     fittedCdfMax,
     predictedCdf,
+    samplingCdf,
     testModeCdf,
   ],
   () => {
@@ -221,8 +248,11 @@ watch(
       cdfChart.data.datasets[2].data = fittedCdfMin.value;
       cdfChart.data.datasets[3].data = fittedCdfMax.value;
       cdfChart.data.datasets[4].data = predictedCdf.value;
+      if (samplingCdf.value && samplingCdf.value.length > 0) {
+        cdfChart.data.datasets[5].data = samplingCdf.value;
+      }
       if (beta.testMode) {
-        cdfChart.data.datasets[5].data = testModeCdf.value;
+        cdfChart.data.datasets[6].data = testModeCdf.value;
       }
       cdfChart.update();
     }
@@ -245,8 +275,11 @@ watch(
         cdfChart.data.datasets[2].label = t('beta.cdf.cdf-min');
         cdfChart.data.datasets[3].label = t('beta.cdf.cdf-max');
         cdfChart.data.datasets[4].label = t('beta.cdf.predicted-cdf');
+        if (beta.samplingCdf && beta.samplingCdf.length > 0) {
+          cdfChart.data.datasets[5].label = t('beta.cdf.sampling-pdf');
+        }
         if (beta.testMode) {
-          cdfChart.data.datasets[5].label = t('beta.cdf.test-mode-cdf');
+          cdfChart.data.datasets[6].label = t('beta.cdf.test-mode-cdf');
         }
         cdfChart.update();
       }

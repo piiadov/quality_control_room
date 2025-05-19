@@ -52,26 +52,34 @@
     },
     "cdf": {
       "chart-title": "CDF Complementar",
-      "est-cdf-min": "Estimado CDF Min",
-      "est-cdf-max": "Estimado CDF Max",
+      "est-cdf-min": "Estimado Min",
+      "est-cdf-max": "Estimado Max",
       "cdf-min": "CDF Min",
       "cdf-max": "CDF Max",
-      "predicted-cdf": "CDF Previsto",
+      "predicted-cdf": "Previsto",
+      "sampling-cdf": "Estimativa de amostragem",
       "test-mode-cdf": "Verdadeira CDF (modo de teste)"
     },
     "pdf": {
       "chart-title": "PDF",
       "pdf-min": "PDF Min",
       "pdf-max": "PDF Max",
-      "predicted-pdf": "PDF Previsto",
+      "predicted-pdf": "Previsto",
+      "sampling-pdf": "Estimativa de amostragem",
       "test-mode-pdf": "Verdadeira PDF (modo de teste)"
     },
     "params": {
       "title": "Beta - Distribuição",
-      "min-quality": "Qualidade Mínima",
-      "max-quality": "Qualidade Máxima",
-      "predicted-quality": "Qualidade Prevista",
-      "test-mode-quality": "Qualidade Verdadeira (modo de teste)"
+      "min-quality": "Qualidade mínima",
+      "max-quality": "Qualidade máxima",
+      "predicted-quality": "Qualidade prevista",
+      "sampling-quality": "Estimativa de amostragem",
+      "test-mode-quality": "Qualidade verdadeira (modo de teste)",
+      "sampling-params": "Parâmetros de amostragem",
+      "mean": "Média",
+      "std": "Desvio padrão",
+      "scaled": "Escalado",
+      "native": "Nativo"
     },
     "chi2": {
       "title": "Teste",
@@ -80,10 +88,11 @@
       "bins-number": "Número de bins",
       "critical": "Valor crítico",
       "value": "",
-      "predicted-quality": "Qualidade Prevista",
-      "min-quality": "Qualidade Mínima",
-      "max-quality": "Qualidade Máxima", 
-      "test-mode-quality": "Qualidade Verdadeira (modo de teste)"
+      "predicted-quality": "Qualidade prevista",
+      "min-quality": "Qualidade mínima",
+      "max-quality": "Qualidade máxima", 
+      "test-mode-quality": "Qualidade verdadeira (modo de teste)",
+      "sampling-quality": "Qualidade por amostragem"
     }
   }
 }

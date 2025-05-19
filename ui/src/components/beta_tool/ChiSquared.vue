@@ -51,6 +51,21 @@ const beta = betaStore();
       </tr>
       <tr>
         <td class="border p-2 text-left">
+          {{ t('beta.chi2.sampling-quality') }}
+        </td>
+        <td class="border p-2 text-center">
+          {{ beta.samplingChi2.toFixed(4) }}
+        </td>
+        <td class="border p-2 text-center">
+          {{ beta.samplingPval.toFixed(4) }}
+        </td>
+        <td class="border p-2 text-center">
+          <CheckIcon v-if="beta.samplingDecision" class="h-5 w-5 mx-auto"/>
+          <XMarkIcon v-else class="h-5 w-5 mx-auto"/>
+        </td>
+      </tr>
+      <tr>
+        <td class="border p-2 text-left">
           {{ t('beta.chi2.predicted-quality') }}
         </td>
         <td class="border p-2 text-center">

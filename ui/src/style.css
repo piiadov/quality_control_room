@@ -28,11 +28,13 @@
     --cdf-min-color: #B22222;
     --cdf-max-color: #B22222;
     --cdf-predicted-color: #32CD32;
+    --cdf-sampling-color: #a8c5b0;
     --cdf-testmode-color: #1E90FF;
 
     --pdf-min-color: #B22222;
     --pdf-max-color: #B22222;
     --pdf-predicted-color: #32CD32;
+    --pdf-sampling-color: #a8c5b0;
     --pdf-testmode-color: #1E90FF;
 
     --table-border-color: #bcbcbc;

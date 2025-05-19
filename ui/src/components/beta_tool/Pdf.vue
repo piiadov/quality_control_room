@@ -35,6 +35,15 @@ const predictedPdf = computed(() =>
   }))
 );
 
+const samplingPdf = computed(() =>
+  beta.samplingPdf && beta.samplingPdf.length > 0
+    ? beta.q.map((x, i) => ({
+        x: x,
+        y: beta.samplingPdf[i],
+      }))
+    : []
+);
+
 let testModePdf = null;
 if (beta.testMode) {
   testModePdf = computed(() =>
@@ -86,6 +95,23 @@ const createChart = () => {
           fill: false,
           pointRadius: 0,
         },
+        ...(samplingPdf.value && samplingPdf.value.length > 0
+          ? [
+              {
+                type: 'line',
+                label: t('beta.pdf.sampling-pdf'),
+                data: samplingPdf.value,
+                borderColor: getComputedStyle(document.documentElement)
+                  .getPropertyValue('--pdf-sampling-color').trim(),
+                backgroundColor: getComputedStyle(document.documentElement)
+                  .getPropertyValue('--pdf-sampling-color').trim(),
+                borderWidth: 2,
+                fill: false,
+                pointRadius: 0,
+              },
+            ]
+          : []
+        ),
         ...(beta.testMode
           ? [
               {
@@ -178,6 +204,7 @@ watch(
     fittedPdfMin,
     fittedPdfMax,
     predictedPdf,
+    samplingPdf,
     testModePdf,
   ],
   () => {
@@ -185,8 +212,11 @@ watch(
       pdfChart.data.datasets[0].data = fittedPdfMin.value;
       pdfChart.data.datasets[1].data = fittedPdfMax.value;
       pdfChart.data.datasets[2].data = predictedPdf.value;
+      if (samplingPdf.value && samplingPdf.value.length > 0) {
+        pdfChart.data.datasets[3].data = samplingPdf.value;
+      }
       if (beta.testMode) {
-        pdfChart.data.datasets[3].data = testModePdf.value;
+        pdfChart.data.datasets[4].data = testModePdf.value;
       }
       pdfChart.update();
     }
@@ -207,8 +237,11 @@ watch(
         pdfChart.data.datasets[0].label = t('beta.pdf.pdf-min');
         pdfChart.data.datasets[1].label = t('beta.pdf.pdf-max');
         pdfChart.data.datasets[2].label = t('beta.pdf.predicted-pdf');
+        if (beta.samplingPdf && beta.samplingPdf.length > 0) {
+          pdfChart.data.datasets[3].label = t('beta.pdf.sampling-pdf');
+        }
         if (beta.testMode) {
-          pdfChart.data.datasets[3].label = t('beta.pdf.test-mode-pdf');
+          pdfChart.data.datasets[4].label = t('beta.pdf.test-mode-pdf');
         }
         pdfChart.update();
       }

@@ -149,6 +149,11 @@ const submitData = () => {
         beta.minDecision = response.data.min_decision;
         beta.maxDecision = response.data.max_decision;
         beta.testModeDecision = response.data.test_mode_decision;
+        beta.samplingMean = response.data.sampling_mean;
+        beta.samplingStd = response.data.sampling_std;
+        beta.samplingParams = response.data.sampling_params;
+        beta.samplingCdf = response.data.sampling_cdf;
+        beta.samplingPdf = response.data.sampling_pdf;
         beta.showResults = true;
         sidebar.sidebarResults = true;
       }

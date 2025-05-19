@@ -64,8 +64,8 @@ pub struct Response {
     max_decision: bool,
     predicted_decision: bool,
     test_mode_decision: bool,
-    sampling_mu: f64,
-    sampling_sigma: f64,
+    sampling_mean: f64,
+    sampling_std: f64,
     sampling_params: [f64; 2],
     sampling_cdf: Vec<f64>,
     sampling_pdf: Vec<f64>,
@@ -116,8 +116,8 @@ impl Default for Response {
             max_decision: false,
             predicted_decision: false,
             test_mode_decision: false,
-            sampling_mu: 0.0,
-            sampling_sigma: 0.0,
+            sampling_mean: 0.0,
+            sampling_std: 0.0,
             sampling_params: [0.0;2],
             sampling_cdf: vec![],
             sampling_pdf: vec![],
@@ -185,8 +185,8 @@ pub fn handle_calc(kind_uint: u8, test_mode: bool, mut data: Vec<f64>, mut min_v
 
     // Calculate sampling parameters
     let sampling_params = calculate_sampling_params(kind.clone(), data.clone());
-    response.sampling_mu = sampling_params[0];
-    response.sampling_sigma = sampling_params[1];
+    response.sampling_mean = sampling_params[0];
+    response.sampling_std = sampling_params[1];
     response.sampling_params = [sampling_params[2], sampling_params[3]];
     response.sampling_cdf = cdf(kind.clone(), q.clone(), response.sampling_params)
         .into_iter().map(|x| 1.0 - x).collect();

@@ -91,6 +91,16 @@ const defaultState = {
     maxDecision: false,
     predictedDecision: false,
     testModeDecision: false,
+    samplingMean: 0.0,
+    samplingStd: 0.0,
+    samplingParams: [0.0, 0.0],
+    samplingCdf: [],
+    samplingPdf: [],
+    samplingChi2: -1.0,
+    samplingPval: -1.0,
+    samplingDecision: false,
+    samplingMeanNative: 0.0,
+    samplingStdNative: 0.0,
 };
 
 function createStore(storeId, initialState = {}) {
