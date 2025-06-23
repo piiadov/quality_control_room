@@ -1,0 +1,29 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug server",
+            "program": "${workspaceFolder}/target/debug/server",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false,
+            "env": {
+                "LD_LIBRARY_PATH": "${workspaceFolder}/../lib"
+            }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug models",
+            "program": "${workspaceFolder}/target/debug/models",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false,
+            "env": {
+                "LD_LIBRARY_PATH": "${workspaceFolder}/../lib"
+            }
+        }
+    ]
+}

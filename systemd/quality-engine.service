@@ -1,0 +1,13 @@
+[Unit]
+Description=Quality control engine
+After=network.target
+
+[Service]
+User=vp
+Group=www-data
+WorkingDirectory=/home/vp/quality_control_room/engine/release
+Environment=""
+ExecStart=
+
+[Install]
+WantedBy=multi-user.target

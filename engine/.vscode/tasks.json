@@ -1,0 +1,60 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build models [debug]",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["build", "--package", "models"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "Build server [debug]",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["build", "--package", "server"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "Build models [release]",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["build", "--package", "models", "--release"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "Build server [release]",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["build", "--package", "server", "--release"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$rustc"]
+        },
+        {
+            "label": "Build tests",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["build", "--tests"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$rustc"]
+        }
+    ]
+}
