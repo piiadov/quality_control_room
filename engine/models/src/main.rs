@@ -54,7 +54,7 @@ fn main() {
 
         let (x, sampling_y) = features_prepare_nm(sample_size, cdf_min, cdf_max,
                                     dist.clone(), kind.clone());
-        
+
         // Split data for models/test
         let (train_indices, test_indices) = split_data(0.70, rows);
         let x_train: Vec<[f64;4]> = train_indices.iter().map(|&i| x[i]).collect();
@@ -66,7 +66,7 @@ fn main() {
         // Flat vectors: XGBoost works with f32 (c_float)
         let x_train_flat = flat_vector::<4>(x_train.clone());
         let y_train_flat = flat_vector::<2>(y_train.clone());
-        
+
         // Train model
         xgb_train(x_train_flat, y_train_flat, x_train.len(), 4, 2, main_params.clone(),
         inferences_folder.clone(), format!("xgb_{}_{}.json", &kind, &sample_size));
@@ -74,10 +74,10 @@ fn main() {
         // Test model
         let x_test_flat = flat_vector::<4>(x_test.clone());
         let y_pred_flat = xgb_predict(x_test_flat, x_test.len(), 4, 2,
-                                 format!("{}/xgb_{}_{}.json", inferences_folder, &kind, &sample_size)); 
+                                 format!("{}/xgb_{}_{}.json", inferences_folder, &kind, &sample_size));
         let y_pred = shape_vector::<2>(y_pred_flat);
-        
-        
+
+
         // Calculate metrics
         let rmse = calculate_rmse(&y_test, &y_pred);
         let sampling_rmse = calculate_rmse(&y_test, &sampling_y_pred);
