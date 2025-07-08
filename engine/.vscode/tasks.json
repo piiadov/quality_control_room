@@ -10,7 +10,11 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": ["$rustc"]
+            "problemMatcher": ["$rustc"],
+            "icon": {
+                "type": "symbol",
+                "id": "debug-alt"
+            }
         },
         {
             "label": "Build server [debug]",
@@ -21,7 +25,11 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": ["$rustc"]
+            "problemMatcher": ["$rustc"],
+            "icon": {
+                "type": "symbol",
+                "id": "debug-alt"
+            }
         },
         {
             "label": "Build models [release]",
@@ -32,7 +40,11 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": ["$rustc"]
+            "problemMatcher": ["$rustc"],
+            "icon": {
+                "type": "symbol",
+                "id": "debug-alt"
+            }
         },
         {
             "label": "Build server [release]",
@@ -43,7 +55,11 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": ["$rustc"]
+            "problemMatcher": ["$rustc"],
+            "icon": {
+                "type": "symbol",
+                "id": "debug-alt"
+            }
         },
         {
             "label": "Build tests",
@@ -54,7 +70,71 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": ["$rustc"]
+            "problemMatcher": ["$rustc"],
+            "icon": {
+                "type": "symbol",
+                "id": "debug-alt"
+            }
+        },
+        {
+            "label": "Build & Run server [debug]",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["run", "--package", "server"],
+            "group": {
+            "kind": "build",
+            "isDefault": false
+            },
+            "problemMatcher": ["$rustc"],
+            "icon": {
+                "type": "symbol",
+                "id": "debug-alt"
+            }
+        },
+        {
+            "label": "Build & Run models [debug]",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["run", "--package", "models"],
+            "group": {
+            "kind": "build",
+            "isDefault": false
+            },
+            "problemMatcher": ["$rustc"],
+            "icon": {
+                "type": "symbol",
+                "id": "debug-alt"
+            }
+        },
+        {
+            "label": "Build & Run server [release]",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["run", "--package", "server", "release"],
+            "group": {
+            "kind": "build",
+            "isDefault": false
+            },
+            "problemMatcher": ["$rustc"],
+            "icon": {
+                "type": "symbol",
+                "id": "debug-alt"
+            }
+        },
+        {
+            "label": "Build & Run models [release]",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["run", "--package", "models", "release"],
+            "group": {
+            "kind": "build",
+            "isDefault": false
+            },
+            "problemMatcher": ["$rustc"],
+            "icon": {
+                "type": "symbol",
+                "id": "bug"
+            }
         }
     ]
 }
