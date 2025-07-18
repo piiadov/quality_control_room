@@ -1,15 +1,32 @@
 <script setup>
-import { HomeIcon, InformationCircleIcon, SunIcon, MoonIcon } from "@heroicons/vue/24/outline";
-import { themeStore, languageStore } from "./store";
-import { useI18n } from "vue-i18n";
+  import { HomeIcon, InformationCircleIcon, SunIcon, MoonIcon } from "@heroicons/vue/24/outline";
+  import { themeStore, languageStore } from "./store";
+  import { useI18n } from "vue-i18n";
+  import { ref } from "vue";
 
-const { t } = useI18n();
-const theme = themeStore();
-const language = languageStore();
+  const { t } = useI18n();
+  const theme = themeStore();
+  const language = languageStore();
+  const showBanner = ref(true);
 </script>
 
 <template>
   <div id="app" class="flex flex-col min-h-screen">
+
+    <div v-if="showBanner" class="flex items-center justify-center mt-2 mb-2">
+      <span class="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-yellow-50 border border-yellow-300 text-yellow-700 font-semibold">
+      🚧 This application is in active development. Features may change or break unexpectedly. 🚧
+        <button
+        @click="showBanner = false"
+        class="ml-2 px-2 py-0.5 rounded-full bg-yellow-100 border border-yellow-300 text-yellow-700 hover:bg-yellow-200 transition"
+        aria-label="Close"
+      >
+        <strong>&times;</strong>
+      </button>
+    </span>
+      
+    </div>
+
     <header class="h-16 shadow flex items-center px-4 bg-backgroundSecondary text-text border-b border-border">
       <!-- Logo and App Name -->
       <div class="flex items-center space-x-2">
@@ -107,7 +124,7 @@ const language = languageStore();
 
         <!-- Email for Feedback -->
         <a
-            href="mailto:vp@quality-control.io"
+            href="mailto:piyadov@alumni.usp.br"
             class="flex items-center space-x-2 hover:opacity-80 text-base"
         >
           <i class="fas fa-envelope text-lg"></i>
