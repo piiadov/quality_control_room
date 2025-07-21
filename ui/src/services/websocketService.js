@@ -1,23 +1,40 @@
 class WebSocketService {
     constructor(url, timeout = 5000) {
-        this.url = url;
+        // Auto-detect protocol based on current page
+        this.url = this.adaptUrlProtocol(url);
         this.timeout = timeout;
         this.socket = null;
     }
 
+    adaptUrlProtocol(url) {
+        // If running on HTTPS, convert ws:// to wss://
+        if (window.location.protocol === 'https:') {
+            return url.replace(/^ws:\/\//, 'wss://');
+        }
+        // If running on HTTP, convert wss:// to ws://
+        if (window.location.protocol === 'http:') {
+            return url.replace(/^wss:\/\//, 'ws://');
+        }
+        return url;
+    }
+
     connect() {
         return new Promise((resolve, reject) => {
+            console.log(`Attempting to connect to WebSocket: ${this.url}`);
             this.socket = new WebSocket(this.url);
 
             this.socket.onopen = () => {
+                console.log('WebSocket connection opened successfully');
                 resolve({ status: 'connected' });
             };
 
             this.socket.onclose = () => {
+                console.log('WebSocket connection closed');
                 resolve({ status: 'closed' });
             };
 
-            this.socket.onerror = () => {
+            this.socket.onerror = (error) => {
+                console.error('WebSocket connection error:', error);
                 reject({ status: 'error', message: 'Backend connection failed' });
             };
         });
