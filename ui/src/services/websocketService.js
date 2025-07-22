@@ -1,21 +1,8 @@
 class WebSocketService {
     constructor(url, timeout = 5000) {
-        // Auto-detect protocol based on current page
-        this.url = this.adaptUrlProtocol(url);
+        this.url = url;
         this.timeout = timeout;
         this.socket = null;
-    }
-
-    adaptUrlProtocol(url) {
-        // If running on HTTPS, convert ws:// to wss://
-        if (window.location.protocol === 'https:') {
-            return url.replace(/^ws:\/\//, 'wss://');
-        }
-        // If running on HTTP, convert wss:// to ws://
-        if (window.location.protocol === 'http:') {
-            return url.replace(/^wss:\/\//, 'ws://');
-        }
-        return url;
     }
 
     connect() {

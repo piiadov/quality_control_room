@@ -4,7 +4,7 @@ import JSZip from "jszip";
 
 export const settingsStore = defineStore('settings', {
     state: () => ({
-        backendUrl: 'wss://191.252.60.9:8081/quality',
+        backendUrl: 'wss://quality-control.io:8081/quality',
         connectTimeout: 5000,
     }),
 })

@@ -2,7 +2,6 @@ use futures::{SinkExt, StreamExt};
 use libserver::api::{handle_about, handle_calc, handle_update_bins, ApiRequest};
 use warp::{Filter, ws};
 
-
 #[tokio::main]
 async fn main() {
     // Server IP
@@ -12,13 +11,10 @@ async fn main() {
         .and(warp::ws())
         .map(|ws: ws::Ws| ws.on_upgrade(handle_socket));
 
-    println!("Quality server started on wss://{}.{}.{}.{}:{}", server_addr.0[0], server_addr.0[1],
-        server_addr.0[2], server_addr.0[3], server_addr.1);
-
     warp::serve(ws_route)
         .tls()
-        .cert_path("/home/vp/letsencrypt-copy/quality-control.io/fullchain1.pem")
-        .key_path("/home/vp/letsencrypt-copy/quality-control.io/privkey1.pem")
+        .cert_path("/etc/ssl/certs/quality-control.io-fullchain.crt")
+        .key_path("/etc/ssl/private/quality-control.io.key")
         .run(server_addr)
         .await;
 }
