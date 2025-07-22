@@ -45,7 +45,8 @@ fn main() {
         wtr.flush().expect("Failed to flush csv writer");
     }
 
-    for sample_size in [5, 10, 20, 30, 40, 50] {
+    //for sample_size in [5, 10, 20, 30, 40, 50] {
+    for sample_size in [100] {
         let population_size: usize = sample_size * 100; // Large number in comparison with sampling
         println!("Sample size: {}", sample_size);
         let start = Instant::now();

@@ -4,6 +4,9 @@ A comprehensive suite of quality control tools for industrial production and ins
 
 🌐 **Live Demo**: [https://quality-control.io](https://quality-control.io)
 
+![Quality Control Room Interface](doc/images/quality-screen.png)
+*Example analysis results in test mode showing the hybrid ML + statistical approach in action*
+
 ## Overview
 
 Quality Control Room provides a hybrid approach to quality control in manufacturing and production environments, combining classical statistical methods with modern machine learning techniques. This toolset is designed to help industrial engineers, quality assurance professionals, and production managers maintain and improve product quality through data-driven insights.
