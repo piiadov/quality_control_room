@@ -37,12 +37,10 @@ Quality Control Room provides a hybrid approach to quality control in manufactur
 
 ```
 ├── engine/          # Core Rust-based processing engine
-├── doc/             # Detailed documentation (under construction!)
+├── doc/             # Documentation (under construction!)
 ├── ui/              # Vue.js web interface
 ├── data/            # Sample data and configuration files
-├── lib/             # Compiled libraries (XGBoost wrapper)
 ├── xgbwrapper/      # C wrapper for XGBoost integration
-├── vscode_ext/      # Simple VS Code extension to run tasks
 └── systemd/         # System service configuration
 ```
 

@@ -4,7 +4,7 @@ project(xgbwrapper VERSION 0.1.0 LANGUAGES C)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Include the XGBoost headers
-include_directories(/home/vp/xgboost/include)
+include_directories(/home/vp/xgboost-headers/include)
 
 # Create the shared library
 add_library(xgbwrapper SHARED src/xgbwrapper.c)
@@ -19,7 +19,7 @@ enable_testing()
 # Add the test executable
 add_executable(test_xgbwrapper tests/test_xgbwrapper.c)
 target_link_libraries(test_xgbwrapper 
-    xgbwrapper m /home/vp/xgboost/lib/libxgboost.so
+    xgbwrapper m /home/vp/quality_control_room/lib/libxgboost.so
 )
 
 # Add a test
