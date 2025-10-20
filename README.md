@@ -1,6 +1,6 @@
 # Quality Control Room
 
-A comprehensive suite of quality control tools for industrial production and inspection processes.
+A suite of quality control tools for industrial production and inspection processes. This is a personal project developed in my spare time.
 
 🌐 **Live Demo**: [https://quality-control.io](https://quality-control.io)
 
@@ -90,21 +90,12 @@ Detailed documentation is currently being prepared and will be available soon. I
 
 *Installation and setup instructions will be provided once the core features are stabilized.*
 
-## Contributing
-
-This is a personal project developed in my spare time. While I'm not actively seeking contributions at this early stage, feedback and suggestions are always welcome through issues or contacts!
-
 ## License
 
 See [LICENSE](LICENSE) file for details.
 
 ## Contact
 
-For questions, suggestions, or industrial collaboration opportunities, please contact me:
+For questions and suggestions:
 
-- **Email**: piyadov@alumni.usp.br
 - **LinkedIn**: [Vasilii Piiadov](https://www.linkedin.com/in/vasilii-piiadov/)
-
----
-
-*Quality Control Room - Bridging traditional quality control with modern machine learning for better industrial production control.*
