@@ -6,27 +6,38 @@ use warp::{Filter, ws};
 async fn main() {
     // Server IP
     let server_addr = ([0, 0, 0, 0], 8081);
+    
+    println!("Starting Quality Control Room Backend Server");
+    println!("Listening on: {}:{}", server_addr.0.map(|x| x.to_string()).join("."), server_addr.1);
+    println!("WebSocket path: wss://quality-control.io:8081/quality");
+    
     // WebSocket route
     let ws_route = warp::path("quality")
         .and(warp::ws())
-        .map(|ws: ws::Ws| ws.on_upgrade(handle_socket));
+        .map(|ws: ws::Ws| {
+            println!("WebSocket upgrade request received");
+            ws.on_upgrade(handle_socket)
+        });
 
     warp::serve(ws_route)
         .tls()
-        .cert_path("/etc/ssl/certs/quality-control.io-fullchain.crt")
-        .key_path("/etc/ssl/private/quality-control.io.key")
+        .cert_path("/etc/letsencrypt/live/quality-control.io/fullchain.pem")
+        .key_path("/etc/letsencrypt/live/quality-control.io/privkey.pem")
         .run(server_addr)
         .await;
 }
 
 async fn handle_socket(websocket: ws::WebSocket) {
+    println!("New WebSocket connection established!");
     let (mut tx, mut rx) = websocket.split();
 
     while let Some(result) = rx.next().await {
         match result {
             Ok(msg) if msg.is_text() => {
                 let text = msg.to_str().unwrap_or("");
+                println!("Received message: {}", text);
                 if let Ok(request) = serde_json::from_str::<ApiRequest>(text) {
+                    println!("Processing command: {}", request.command);
                     match request.command.as_str() {
                         "calc" => {
                             let response = handle_calc(

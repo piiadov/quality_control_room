@@ -9,6 +9,9 @@ include_directories(/home/vp/xgboost-headers/include)
 # Create the shared library
 add_library(xgbwrapper SHARED src/xgbwrapper.c)
 
+# Link the wrapper library to XGBoost
+target_link_libraries(xgbwrapper PRIVATE /home/vp/quality_control_room/lib/libxgboost.so)
+
 # Specify the export macro
 target_compile_definitions(xgbwrapper PRIVATE XGBWRAPPER_EXPORTS)
 
