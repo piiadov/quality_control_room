@@ -2,8 +2,6 @@
 
 Quality control tool for industrial production and inspection processes. Personal project developed in spare time.
 
-### Live Demo: [https://quality-control.io](https://quality-control.io)
-
 ### Quick Start
 1. Open [https://quality-control.io/tools/beta-profile](https://quality-control.io/tools/beta-profile)
 2. Click the **"Analyze"** button
