@@ -14,6 +14,9 @@ Quality control tool for industrial production and inspection processes. Persona
 
 (some features in the dashboard are under construction)
 
+### Live Demo: 
+[https://quality-control.io](https://quality-control.io)
+
 ## Overview
 
 Hybrid approach combining classical statistical methods with machine learning for manufacturing quality control.
