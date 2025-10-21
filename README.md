@@ -1,8 +1,13 @@
 # Quality Control Room
 
-A suite of quality control tools for industrial production and inspection processes. This is a personal project developed in my spare time.
+Quality control tool for industrial production and inspection processes. Personal project developed in spare time.
 
-🌐 **Live Demo**: [https://quality-control.io](https://quality-control.io)
+### Live Demo: [https://quality-control.io](https://quality-control.io)
+
+### Quick Start
+1. Open [https://quality-control.io/tools/beta-profile](https://quality-control.io/tools/beta-profile)
+2. Click the **"Analyze"** button
+3. Test mode is already checked, so the system will process test data and show results as in the following picture:
 
 ![Quality Control Room Interface](doc/images/quality-screen.png)
 *Example analysis results in test mode showing the hybrid ML + statistical approach in action*
@@ -11,7 +16,7 @@ A suite of quality control tools for industrial production and inspection proces
 
 ## Overview
 
-Quality Control Room provides a hybrid approach to quality control in manufacturing and production environments, combining classical statistical methods with modern machine learning techniques. This toolset is designed to help industrial engineers, quality assurance professionals, and production managers maintain and improve product quality through data-driven insights.
+Hybrid approach combining classical statistical methods with machine learning for manufacturing quality control.
 
 ## Key Features
 
@@ -21,17 +26,17 @@ Quality Control Room provides a hybrid approach to quality control in manufactur
 - Standard quality control calculations and measurements
 
 ### Machine Learning Enhanced Approach
-- **Hybrid ML + Statistical Method**: An innovative approach that combines machine learning with statistical analysis
-- **No Normality Assumption Required**: Unlike traditional methods, this approach doesn't require data to follow a normal distribution
-- **Small Sample Optimization**: Works effectively with limited sample sizes, addressing a common limitation of classical statistical approaches
-- **Improved Accuracy**: Better or equal performance than traditional methods, especially for small sampling scenarios
+- **Hybrid ML + Statistical Method**: Combines machine learning with statistical analysis
+- **No Normality Assumption Required**: Works with any data distribution
+- **Small Sample Optimization**: Effective with limited sample sizes
+- **Improved Accuracy**: Equal or better performance than traditional methods
 
 ## Advantages
 
-✅ **Works with small sample sizes** - Traditional methods often require large datasets  
-✅ **No normality hypothesis required** - More flexible than classical statistical approaches  
-✅ **Hybrid methodology** - Combines the reliability of statistical methods with the power of machine learning  
-✅ **Industrial-grade** - Designed for real-world industrial production environments  
+* Works with small sample sizes  
+* No normality assumption required  
+* Combines statistical reliability with ML power  
+* Production-ready  
 
 ## Project Structure
 
@@ -46,18 +51,18 @@ Quality Control Room provides a hybrid approach to quality control in manufactur
 
 ## Technology Stack
 
-*Yes, there's life beyond Python!* 😄
-
 - **Backend Engine**: Rust (high-performance computing)
 - **Machine Learning**: XGBoost with custom C wrapper
 - **Frontend**: Vue.js with Tailwind CSS
 - **Deployment**: Systemd service integration
 
+**Yes, there's life beyond Python!** 😄
+
 ## Current Status
 
-🚧 **Under Active Development** 🚧
+**Under Active Development**
 
-This project is currently under construction and is being developed incrementally during my spare time. Many features are planned but not yet implemented. The core hybrid ML + statistical methodology is functional, but the full feature set is still being built out.
+Core ML + statistical methodology is functional. Full feature set in progress.
 
 ### What's Working
 - Core ML + statistical analysis engine
@@ -76,17 +81,15 @@ This project is currently under construction and is being developed incrementall
 
 ## Documentation
 
-Detailed documentation is currently being prepared and will be available soon. It will include:
-
-- Complete methodology explanation
+In progress. Will include:
+- Methodology explanation
 - API reference
-- Usage examples and tutorials
+- Usage examples
 - Comparison studies with traditional methods
-- Something else
 
 ## Getting Started
 
-*Installation and setup instructions will be provided once the core features are stabilized.*
+Installation and setup instructions coming soon.
 
 ## License
 
