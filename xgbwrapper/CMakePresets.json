@@ -1,28 +1,181 @@
 {
-    "version": 8,
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
+    },
     "configurePresets": [
         {
-            "name": "debug with gcc",
-            "displayName": "Debug",
-            "description": "Using compilers: C = /usr/bin/gcc, CXX = /usr/bin/g++",
-            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "name": "base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "installDir": "${sourceDir}/install/${presetName}",
             "cacheVariables": {
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
-                "CMAKE_C_COMPILER": "/usr/bin/gcc",
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "XGBWRAPPER_BUILD_TESTS": "ON"
             }
         },
         {
-            "name": "release with gcc",
-            "displayName": "Release",
-            "description": "Using compilers: C = /usr/bin/gcc, CXX = /usr/bin/g++ with optimizations",
-            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "name": "debug",
+            "inherits": "base",
+            "displayName": "Debug",
+            "description": "Debug build with full symbols and no optimization",
             "cacheVariables": {
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
-                "CMAKE_C_COMPILER": "/usr/bin/gcc",
-                "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_C_FLAGS_RELEASE": "-O3"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_FLAGS_DEBUG": "-g3 -O0 -Wall -Wextra -Wpedantic -Werror"
             }
+        },
+        {
+            "name": "release",
+            "inherits": "base",
+            "displayName": "Release",
+            "description": "Optimized release build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_FLAGS_RELEASE": "-O3 -DNDEBUG -march=native -flto -fPIC",
+                "CMAKE_EXE_LINKER_FLAGS_RELEASE": "-flto",
+                "CMAKE_SHARED_LINKER_FLAGS_RELEASE": "-flto"
+            }
+        },
+        {
+            "name": "relwithdebinfo",
+            "inherits": "base",
+            "displayName": "Release with Debug Info",
+            "description": "Optimized build with debug symbols for profiling",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_C_FLAGS_RELWITHDEBINFO": "-O2 -g -DNDEBUG -march=native"
+            }
+        },
+        {
+            "name": "asan",
+            "inherits": "debug",
+            "displayName": "AddressSanitizer",
+            "description": "Debug build with AddressSanitizer for memory error detection",
+            "cacheVariables": {
+                "CMAKE_C_FLAGS_DEBUG": "-g3 -O1 -Wall -Wextra -fsanitize=address,undefined -fno-omit-frame-pointer"
+            },
+            "environment": {
+                "ASAN_OPTIONS": "detect_leaks=1:abort_on_error=1"
+            }
+        },
+        {
+            "name": "tsan",
+            "inherits": "debug",
+            "displayName": "ThreadSanitizer",
+            "description": "Debug build with ThreadSanitizer for race condition detection",
+            "cacheVariables": {
+                "CMAKE_C_FLAGS_DEBUG": "-g3 -O1 -Wall -Wextra -fsanitize=thread -fno-omit-frame-pointer"
+            }
+        },
+        {
+            "name": "coverage",
+            "inherits": "debug",
+            "displayName": "Coverage",
+            "description": "Debug build with code coverage instrumentation",
+            "cacheVariables": {
+                "CMAKE_C_FLAGS_DEBUG": "-g3 -O0 --coverage -fprofile-arcs -ftest-coverage"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "debug",
+            "configurePreset": "debug",
+            "configuration": "Debug"
+        },
+        {
+            "name": "release",
+            "configurePreset": "release",
+            "configuration": "Release"
+        },
+        {
+            "name": "relwithdebinfo",
+            "configurePreset": "relwithdebinfo",
+            "configuration": "RelWithDebInfo"
+        },
+        {
+            "name": "asan",
+            "configurePreset": "asan",
+            "configuration": "Debug"
+        },
+        {
+            "name": "tsan",
+            "configurePreset": "tsan",
+            "configuration": "Debug"
+        },
+        {
+            "name": "coverage",
+            "configurePreset": "coverage",
+            "configuration": "Debug"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "debug",
+            "configurePreset": "debug",
+            "output": {
+                "outputOnFailure": true,
+                "verbosity": "default"
+            }
+        },
+        {
+            "name": "release",
+            "configurePreset": "release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "asan",
+            "configurePreset": "asan",
+            "output": {
+                "outputOnFailure": true,
+                "verbosity": "verbose"
+            },
+            "environment": {
+                "ASAN_OPTIONS": "detect_leaks=1:abort_on_error=1:print_stats=1"
+            }
+        },
+        {
+            "name": "coverage",
+            "configurePreset": "coverage",
+            "output": {
+                "outputOnFailure": true
+            }
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "ci-debug",
+            "displayName": "CI Debug Pipeline",
+            "description": "Configure, build, and test in debug mode",
+            "steps": [
+                { "type": "configure", "name": "debug" },
+                { "type": "build", "name": "debug" },
+                { "type": "test", "name": "debug" }
+            ]
+        },
+        {
+            "name": "ci-release",
+            "displayName": "CI Release Pipeline",
+            "description": "Configure, build, and test in release mode",
+            "steps": [
+                { "type": "configure", "name": "release" },
+                { "type": "build", "name": "release" },
+                { "type": "test", "name": "release" }
+            ]
+        },
+        {
+            "name": "ci-asan",
+            "displayName": "CI Sanitizer Pipeline",
+            "description": "Memory safety validation with AddressSanitizer",
+            "steps": [
+                { "type": "configure", "name": "asan" },
+                { "type": "build", "name": "asan" },
+                { "type": "test", "name": "asan" }
+            ]
         }
     ]
 }
