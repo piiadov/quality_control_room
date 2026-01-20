@@ -1,0 +1,30 @@
+[package]
+name = "models_gen"
+version = "0.1.0"
+edition = "2021"
+description = "XGBoost model generator for quality control distribution prediction"
+authors = ["vp"]
+
+[dependencies]
+# Configuration
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+
+# Statistics and distributions
+statrs = "0.18"
+rand = "0.9"
+rand_distr = "0.5"
+
+# Numerical optimization
+nlopt = "0.8"
+interp = "2.0"
+
+# Parallel processing
+rayon = "1.10"
+
+# Metrics output
+csv = "1.3"
+
+[[bin]]
+name = "models_gen"
+path = "src/main.rs"

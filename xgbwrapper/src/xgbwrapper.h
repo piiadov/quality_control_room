@@ -289,6 +289,79 @@ XGBWRAPPER_API XGBWrapperStatus xgbw_generate_test_data(
     float* x, float* y, int rows, int x_cols
 );
 
+/**
+ * @brief Train an XGBoost model and save to file with timestamp suffix.
+ * 
+ * Creates and trains an XGBoost booster with the specified configuration,
+ * then saves the model in UBJSON format with an auto-generated timestamp suffix.
+ * 
+ * The output filename is constructed as: {output_dir}/{model_name}_{YYYYMMDD_HHMMSS}.ubj
+ * 
+ * @param[in]  x                Training features (row-major, rows × x_cols)
+ * @param[in]  y                Training targets (row-major, rows × y_cols)
+ * @param[in]  rows             Number of training samples
+ * @param[in]  x_cols           Number of feature columns
+ * @param[in]  y_cols           Number of target columns  
+ * @param[in]  config           Array of configuration key-value pairs
+ * @param[in]  len_config       Number of configuration pairs
+ * @param[in]  output_dir       Directory to save the model (e.g., "../models")
+ * @param[in]  model_name       Base name for the model (e.g., "xgb_Beta_100")
+ * @param[out] actual_path_out  Buffer to receive the actual path written (can be NULL)
+ * @param[in]  actual_path_size Size of actual_path_out buffer
+ * 
+ * @return XGBW_SUCCESS, or error code on failure
+ * 
+ * @note The model is always saved in UBJSON format for optimal load performance.
+ * @note The "n_estimators" parameter in config controls the number of 
+ *       boosting iterations and is required.
+ */
+XGBWRAPPER_API XGBWrapperStatus xgbw_train_timestamped(
+    const float* x, const float* y,
+    int rows, int x_cols, int y_cols,
+    const KVPair* config, int len_config,
+    const char* output_dir,
+    const char* model_name,
+    char* actual_path_out,
+    size_t actual_path_size
+);
+
+/**
+ * @brief Train an XGBoost model with evaluation on test data.
+ * 
+ * Performs a complete train/evaluate cycle:
+ * 1. Splits data into train/test sets (using train_ratio)
+ * 2. Trains an XGBoost model on training data
+ * 3. Evaluates on test data and returns RMSE
+ * 4. Saves the model in UBJSON format with timestamp suffix
+ * 
+ * @param[in]  x                Full feature matrix (row-major, rows × x_cols)
+ * @param[in]  y                Full target matrix (row-major, rows × y_cols)
+ * @param[in]  rows             Total number of samples
+ * @param[in]  x_cols           Number of feature columns
+ * @param[in]  y_cols           Number of target columns  
+ * @param[in]  train_ratio      Fraction of data for training (e.g., 0.7 for 70%)
+ * @param[in]  config           Array of configuration key-value pairs
+ * @param[in]  len_config       Number of configuration pairs
+ * @param[in]  output_dir       Directory to save the model
+ * @param[in]  model_name       Base name for the model
+ * @param[out] actual_path_out  Buffer to receive the actual path written (can be NULL)
+ * @param[in]  actual_path_size Size of actual_path_out buffer
+ * @param[out] rmse_out         Output RMSE for each target column (pre-allocated, size y_cols)
+ * 
+ * @return XGBW_SUCCESS, or error code on failure
+ */
+XGBWRAPPER_API XGBWrapperStatus xgbw_train_eval(
+    const float* x, const float* y,
+    int rows, int x_cols, int y_cols,
+    float train_ratio,
+    const KVPair* config, int len_config,
+    const char* output_dir,
+    const char* model_name,
+    char* actual_path_out,
+    size_t actual_path_size,
+    float* rmse_out
+);
+
 #ifdef __cplusplus
 }
 #endif

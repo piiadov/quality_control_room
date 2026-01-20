@@ -1,0 +1,48 @@
+# Models Generator Configuration
+# Training hyperparameters and output settings
+
+training:
+  # Sample sizes to train models for
+  sample_sizes: [5, 10, 20, 50, 100]
+  
+  # Distribution types to generate models for
+  distributions:
+    - Beta
+    - Normal
+  
+  # Train/test split ratio (0.7 = 70% train, 30% test)
+  train_ratio: 0.70
+  
+  # Number of examples per parameter pair (reduce for faster debug runs)
+  dist_train_size: 10
+  
+  # Parameter grid resolution [p1_resolution, p2_resolution]
+  # Total rows = p1_res * p2_res * dist_train_size
+  # Example: 10 * 10 * 10 = 1000 rows (debug), 100 * 100 * 100 = 1M rows (production)
+  params_resolution: [10, 10]
+  
+  # Population size multiplier (population_size = sample_size * this value)
+  population_multiplier: 100
+
+xgboost:
+  booster: "gbtree"
+  objective: "reg:squarederror"
+  eval_metric: "rmse"
+  n_thread: "4"
+  subsample: "0.8"
+  reg_alpha: "0.1"
+  reg_lambda: "1.0"
+  max_depth: "6"
+  gamma: "0.0"
+  learning_rate: "0.1"
+  colsample_bytree: "0.8"
+  eta: "0.3"
+  n_estimators: "100"
+  random_state: "42"
+
+output:
+  # Output directory for trained models (relative to project root)
+  models_dir: "../models"
+  
+  # Metrics CSV file path
+  metrics_file: "../models/metrics.csv"

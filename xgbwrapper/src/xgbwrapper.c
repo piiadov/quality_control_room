@@ -462,3 +462,336 @@ XGBWrapperStatus xgbw_generate_test_data(float* x, float* y, int rows, int x_col
     
     return XGBW_SUCCESS;
 }
+
+XGBWrapperStatus xgbw_train_timestamped(
+    const float* x, const float* y,
+    int rows, int x_cols, int y_cols,
+    const KVPair* config, int len_config,
+    const char* output_dir,
+    const char* model_name,
+    char* actual_path_out,
+    size_t actual_path_size
+) {
+    XGBW_CHECK_NULL(x, "x");
+    XGBW_CHECK_NULL(y, "y");
+    XGBW_CHECK_NULL(config, "config");
+    XGBW_CHECK_STRING(output_dir, "output_dir");
+    XGBW_CHECK_STRING(model_name, "model_name");
+    XGBW_CHECK_POSITIVE(rows, "rows");
+    XGBW_CHECK_POSITIVE(x_cols, "x_cols");
+    XGBW_CHECK_POSITIVE(y_cols, "y_cols");
+    XGBW_CHECK_POSITIVE(len_config, "len_config");
+
+    int status;
+    DMatrixHandle dtrain = NULL;
+    BoosterHandle booster = NULL;
+    XGBWrapperStatus result = XGBW_SUCCESS;
+
+    /* Generate timestamped filename */
+    char timestamp[20];
+    time_t now = time(NULL);
+    struct tm* tm_info = localtime(&now);
+    strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", tm_info);
+
+    char full_path[512];
+    snprintf(full_path, sizeof(full_path), "%s/%s_%s.ubj", output_dir, model_name, timestamp);
+
+    /* Return actual path to caller if buffer provided */
+    if (actual_path_out != NULL && actual_path_size > 0) {
+        strncpy(actual_path_out, full_path, actual_path_size - 1);
+        actual_path_out[actual_path_size - 1] = '\0';
+    }
+
+    /* Create DMatrix */
+    status = XGDMatrixCreateFromMat(x, (bst_ulong)rows, (bst_ulong)x_cols, -1.0f, &dtrain);
+    if (status != 0) {
+        xgbw_set_error("train_timestamped: XGDMatrixCreateFromMat failed: %s", XGBGetLastError());
+        return XGBW_ERROR_XGBOOST;
+    }
+
+    /* Set labels */
+    status = XGDMatrixSetFloatInfo(dtrain, "label", y, (bst_ulong)(rows * y_cols));
+    if (status != 0) {
+        xgbw_set_error("train_timestamped: XGDMatrixSetFloatInfo failed: %s", XGBGetLastError());
+        result = XGBW_ERROR_XGBOOST;
+        goto cleanup;
+    }
+
+    /* Create booster */
+    status = XGBoosterCreate(&dtrain, 1, &booster);
+    if (status != 0) {
+        xgbw_set_error("train_timestamped: XGBoosterCreate failed: %s", XGBGetLastError());
+        result = XGBW_ERROR_XGBOOST;
+        goto cleanup;
+    }
+
+    /* Parse config and set parameters */
+    int n_estimators = 0;
+    for (int i = 0; i < len_config; ++i) {
+        if (config[i].key == NULL || config[i].value == NULL) continue;
+        
+        if (strcmp(config[i].key, "n_estimators") == 0) {
+            n_estimators = atoi(config[i].value);
+            continue;
+        }
+        
+        status = XGBoosterSetParam(booster, config[i].key, config[i].value);
+        if (status != 0) {
+            xgbw_log(XGBW_LOG_WARN, "train_timestamped: failed to set param %s=%s", 
+                     config[i].key, config[i].value);
+        }
+    }
+
+    if (n_estimators < 1) {
+        xgbw_set_error("train_timestamped: n_estimators must be >= 1 (got %d)", n_estimators);
+        result = XGBW_ERROR_INVALID_PARAM;
+        goto cleanup;
+    }
+
+    /* Training loop */
+    xgbw_log(XGBW_LOG_INFO, "train_timestamped: starting %d iterations", n_estimators);
+    for (int iter = 0; iter < n_estimators; ++iter) {
+        status = XGBoosterUpdateOneIter(booster, iter, dtrain);
+        if (status != 0) {
+            xgbw_set_error("train_timestamped: iteration %d failed: %s", iter, XGBGetLastError());
+            result = XGBW_ERROR_XGBOOST;
+            goto cleanup;
+        }
+    }
+
+    /* Save model in UBJSON format using buffer API */
+    bst_ulong buf_len = 0;
+    const char* buf_data = NULL;
+    const char* format_config = "{\"format\": \"ubj\"}";
+
+    status = XGBoosterSaveModelToBuffer(booster, format_config, &buf_len, &buf_data);
+    if (status != 0) {
+        xgbw_set_error("train_timestamped: XGBoosterSaveModelToBuffer failed: %s", XGBGetLastError());
+        result = XGBW_ERROR_XGBOOST;
+        goto cleanup;
+    }
+
+    /* Write buffer to file */
+    FILE* f = fopen(full_path, "wb");
+    if (f == NULL) {
+        xgbw_set_error("train_timestamped: failed to open %s for writing", full_path);
+        result = XGBW_ERROR_FILE_IO;
+        goto cleanup;
+    }
+
+    size_t written = fwrite(buf_data, 1, buf_len, f);
+    fclose(f);
+
+    if (written != buf_len) {
+        xgbw_set_error("train_timestamped: failed to write model (wrote %zu of %lu bytes)", 
+                       written, (unsigned long)buf_len);
+        result = XGBW_ERROR_FILE_IO;
+        goto cleanup;
+    }
+    
+    xgbw_log(XGBW_LOG_INFO, "train_timestamped: model saved to %s (%lu bytes)", 
+             full_path, (unsigned long)buf_len);
+
+cleanup:
+    if (booster) XGBoosterFree(booster);
+    if (dtrain) XGDMatrixFree(dtrain);
+    return result;
+}
+
+XGBWrapperStatus xgbw_train_eval(
+    const float* x, const float* y,
+    int rows, int x_cols, int y_cols,
+    float train_ratio,
+    const KVPair* config, int len_config,
+    const char* output_dir,
+    const char* model_name,
+    char* actual_path_out,
+    size_t actual_path_size,
+    float* rmse_out
+) {
+    XGBW_CHECK_NULL(x, "x");
+    XGBW_CHECK_NULL(y, "y");
+    XGBW_CHECK_NULL(config, "config");
+    XGBW_CHECK_NULL(rmse_out, "rmse_out");
+    XGBW_CHECK_STRING(output_dir, "output_dir");
+    XGBW_CHECK_STRING(model_name, "model_name");
+    XGBW_CHECK_POSITIVE(rows, "rows");
+    XGBW_CHECK_POSITIVE(x_cols, "x_cols");
+    XGBW_CHECK_POSITIVE(y_cols, "y_cols");
+    XGBW_CHECK_POSITIVE(len_config, "len_config");
+
+    if (train_ratio <= 0.0f || train_ratio >= 1.0f) {
+        xgbw_set_error("train_eval: train_ratio must be in (0, 1), got %f", train_ratio);
+        return XGBW_ERROR_INVALID_PARAM;
+    }
+
+    int status;
+    XGBWrapperStatus result = XGBW_SUCCESS;
+    
+    /* Allocate split buffers */
+    int rows_train = (int)(train_ratio * rows);
+    int rows_test = rows - rows_train;
+    
+    float* x_train = (float*)malloc((size_t)rows_train * x_cols * sizeof(float));
+    float* y_train = (float*)malloc((size_t)rows_train * y_cols * sizeof(float));
+    float* x_test = (float*)malloc((size_t)rows_test * x_cols * sizeof(float));
+    float* y_test = (float*)malloc((size_t)rows_test * y_cols * sizeof(float));
+    float* y_pred = (float*)malloc((size_t)rows_test * y_cols * sizeof(float));
+    
+    if (!x_train || !y_train || !x_test || !y_test || !y_pred) {
+        xgbw_set_error("train_eval: memory allocation failed");
+        result = XGBW_ERROR_MEMORY;
+        goto cleanup_buffers;
+    }
+    
+    /* Split data */
+    result = xgbw_split_data(x, y, x_train, y_train, x_test, y_test,
+                             x_cols, y_cols, rows, rows_train);
+    if (result != XGBW_SUCCESS) {
+        goto cleanup_buffers;
+    }
+    
+    /* Generate timestamped filename */
+    char timestamp[20];
+    time_t now = time(NULL);
+    struct tm* tm_info = localtime(&now);
+    strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", tm_info);
+
+    char full_path[512];
+    snprintf(full_path, sizeof(full_path), "%s/%s_%s.ubj", output_dir, model_name, timestamp);
+
+    if (actual_path_out != NULL && actual_path_size > 0) {
+        strncpy(actual_path_out, full_path, actual_path_size - 1);
+        actual_path_out[actual_path_size - 1] = '\0';
+    }
+    
+    /* Train on training data */
+    DMatrixHandle dtrain = NULL;
+    DMatrixHandle dtest = NULL;
+    BoosterHandle booster = NULL;
+    
+    status = XGDMatrixCreateFromMat(x_train, (bst_ulong)rows_train, (bst_ulong)x_cols, -1.0f, &dtrain);
+    if (status != 0) {
+        xgbw_set_error("train_eval: XGDMatrixCreateFromMat (train) failed: %s", XGBGetLastError());
+        result = XGBW_ERROR_XGBOOST;
+        goto cleanup_xgb;
+    }
+
+    status = XGDMatrixSetFloatInfo(dtrain, "label", y_train, (bst_ulong)(rows_train * y_cols));
+    if (status != 0) {
+        xgbw_set_error("train_eval: XGDMatrixSetFloatInfo failed: %s", XGBGetLastError());
+        result = XGBW_ERROR_XGBOOST;
+        goto cleanup_xgb;
+    }
+
+    status = XGBoosterCreate(&dtrain, 1, &booster);
+    if (status != 0) {
+        xgbw_set_error("train_eval: XGBoosterCreate failed: %s", XGBGetLastError());
+        result = XGBW_ERROR_XGBOOST;
+        goto cleanup_xgb;
+    }
+
+    /* Parse config and train */
+    int n_estimators = 0;
+    for (int i = 0; i < len_config; ++i) {
+        if (config[i].key == NULL || config[i].value == NULL) continue;
+        if (strcmp(config[i].key, "n_estimators") == 0) {
+            n_estimators = atoi(config[i].value);
+            continue;
+        }
+        XGBoosterSetParam(booster, config[i].key, config[i].value);
+    }
+
+    if (n_estimators < 1) {
+        xgbw_set_error("train_eval: n_estimators must be >= 1 (got %d)", n_estimators);
+        result = XGBW_ERROR_INVALID_PARAM;
+        goto cleanup_xgb;
+    }
+
+    xgbw_log(XGBW_LOG_INFO, "train_eval: training %d iterations on %d samples", n_estimators, rows_train);
+    for (int iter = 0; iter < n_estimators; ++iter) {
+        status = XGBoosterUpdateOneIter(booster, iter, dtrain);
+        if (status != 0) {
+            xgbw_set_error("train_eval: iteration %d failed: %s", iter, XGBGetLastError());
+            result = XGBW_ERROR_XGBOOST;
+            goto cleanup_xgb;
+        }
+    }
+    
+    /* Predict on test data */
+    status = XGDMatrixCreateFromMat(x_test, (bst_ulong)rows_test, (bst_ulong)x_cols, -1.0f, &dtest);
+    if (status != 0) {
+        xgbw_set_error("train_eval: XGDMatrixCreateFromMat (test) failed: %s", XGBGetLastError());
+        result = XGBW_ERROR_XGBOOST;
+        goto cleanup_xgb;
+    }
+    
+    bst_ulong out_len = 0;
+    const float* out_result = NULL;
+    status = XGBoosterPredict(booster, dtest, 0, 0, 0, &out_len, &out_result);
+    if (status != 0) {
+        xgbw_set_error("train_eval: XGBoosterPredict failed: %s", XGBGetLastError());
+        result = XGBW_ERROR_XGBOOST;
+        goto cleanup_xgb;
+    }
+    
+    if (out_len != (bst_ulong)(rows_test * y_cols)) {
+        xgbw_set_error("train_eval: prediction size mismatch (expected %d, got %lu)", 
+                       rows_test * y_cols, (unsigned long)out_len);
+        result = XGBW_ERROR_SIZE_MISMATCH;
+        goto cleanup_xgb;
+    }
+    
+    memcpy(y_pred, out_result, out_len * sizeof(float));
+    
+    /* Calculate RMSE */
+    result = xgbw_calculate_rmse(y_pred, y_test, rows_test, y_cols, rmse_out);
+    if (result != XGBW_SUCCESS) {
+        goto cleanup_xgb;
+    }
+    
+    xgbw_log(XGBW_LOG_INFO, "train_eval: RMSE on %d test samples: [%f, %f]", 
+             rows_test, rmse_out[0], y_cols > 1 ? rmse_out[1] : 0.0f);
+    
+    /* Save model */
+    bst_ulong buf_len = 0;
+    const char* buf_data = NULL;
+    status = XGBoosterSaveModelToBuffer(booster, "{\"format\": \"ubj\"}", &buf_len, &buf_data);
+    if (status != 0) {
+        xgbw_set_error("train_eval: XGBoosterSaveModelToBuffer failed: %s", XGBGetLastError());
+        result = XGBW_ERROR_XGBOOST;
+        goto cleanup_xgb;
+    }
+
+    FILE* f = fopen(full_path, "wb");
+    if (f == NULL) {
+        xgbw_set_error("train_eval: failed to open %s for writing", full_path);
+        result = XGBW_ERROR_FILE_IO;
+        goto cleanup_xgb;
+    }
+
+    size_t written = fwrite(buf_data, 1, buf_len, f);
+    fclose(f);
+
+    if (written != buf_len) {
+        xgbw_set_error("train_eval: failed to write model");
+        result = XGBW_ERROR_FILE_IO;
+        goto cleanup_xgb;
+    }
+    
+    xgbw_log(XGBW_LOG_INFO, "train_eval: model saved to %s", full_path);
+
+cleanup_xgb:
+    if (booster) XGBoosterFree(booster);
+    if (dtrain) XGDMatrixFree(dtrain);
+    if (dtest) XGDMatrixFree(dtest);
+    
+cleanup_buffers:
+    free(x_train);
+    free(y_train);
+    free(x_test);
+    free(y_test);
+    free(y_pred);
+    
+    return result;
+}

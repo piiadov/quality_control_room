@@ -1,0 +1,29 @@
+# Test Configuration - smaller dataset for quick validation
+training:
+  sample_sizes: [10]
+  distributions:
+    - Beta
+  test_split: 0.30
+  dist_train_size: 10
+  params_resolution: [10, 10]
+  population_multiplier: 100
+
+xgboost:
+  booster: "gbtree"
+  objective: "reg:squarederror"
+  eval_metric: "rmse"
+  n_thread: "4"
+  subsample: "0.8"
+  reg_alpha: "0.1"
+  reg_lambda: "1.0"
+  max_depth: "6"
+  gamma: "0.0"
+  learning_rate: "0.1"
+  colsample_bytree: "0.8"
+  eta: "0.3"
+  n_estimators: "50"
+  random_state: "42"
+
+output:
+  models_dir: "../models"
+  metrics_file: "../models/metrics.csv"
