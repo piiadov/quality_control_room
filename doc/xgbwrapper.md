@@ -8,39 +8,53 @@
 
 ## Purpose in Quality Control Room
 
-xgbwrapper is a specialized C library that enables the Rust-based Quality Control Room engine to leverage XGBoost for **predicting population distribution parameters from small samples**.
+xgbwrapper is a specialized C library that enables the Quality Control Room to leverage XGBoost for **predicting population distribution parameters from small samples**.
 
 ### The Problem We Solve
 
-In industrial quality control, obtaining large samples is expensive. Given a small sample (5-100 items) from a batch (e.g., 3000 items), we need to estimate the underlying distribution parameters. The Rust engine:
+In industrial quality control, obtaining large samples is expensive. Given a small sample (5-100 items) from a batch (e.g., 3000 items), we need to estimate the underlying distribution parameters.
 
-1. Computes **hypergeometric confidence intervals** around the empirical CDF
-2. Fits **Beta/Normal distributions** to these bounds via Nelder-Mead optimization
-3. Uses **xgbwrapper** to predict optimal final parameters from these fitted features
+### Architecture
+
+The library is used by two independent Rust projects:
+
+1. **models_gen** (Model Generator) - Offline training
+   - Generates synthetic distribution data
+   - Trains XGBoost models for parameter prediction
+   - Saves models in UBJSON format with timestamps
+   - Uses: `xgbw_train_eval()`
+
+2. **engine/server** (Inference Server) - Online prediction
+   - Loads pre-trained models
+   - Predicts distribution parameters from sample features
+   - Uses: `xgbw_predict()`
 
 ### Where xgbwrapper Fits
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                 Quality Control Room Engine (Rust)              │
+│                   models_gen (Rust - Offline)                   │
+│                                                                 │
+│  Generate Data → Fit CDF Curves → Train via xgbw_train_eval()  │
+│        ↓                                                        │
+│        └─────────────→ models/*.ubj (timestamped UBJSON)       │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                 engine/server (Rust - Online)                   │
 │                                                                 │
 │  Sample Data → Confidence Intervals → CDF Fitting → Features   │
 │        ↓                                                        │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ features = [α_min, β_min, α_max, β_max, n, N, ...]       │  │
-│  └──────────────────────────────────────────────────────────┘  │
-│        ↓                                                        │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │              engine/models/src/wrapper.rs                 │  │
-│  │                    (Rust FFI layer)                       │  │
-│  └──────────────────────────────────────────────────────────┘  │
+│  Predict via xgbw_predict() ← loads models/*.ubj               │
 └─────────────────────────────────────────────────────────────────┘
-                              ↓ FFI calls
+                              ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │                      xgbwrapper (C Library)                     │
 │                                                                 │
-│  xgbw_train()   - Train model on simulated data                │
-│  xgbw_predict() - Predict [α, β] or [μ, σ] from features       │
+│  xgbw_train_eval()      - Train + evaluate (models_gen)        │
+│  xgbw_train_timestamped() - Train with timestamp suffix        │
+│  xgbw_train()           - Basic training                       │
+│  xgbw_predict()         - Predict params from features         │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -69,7 +83,19 @@ Libraries are installed to `quality_control_room/lib/`:
 lib/
 ├── libxgboost.so         # XGBoost (~17 MB)
 ├── libdmlc.so            # DMLC dependency (~1.2 MB)
-└── libxgbwrapper.so      # This library (~26 KB)
+└── libxgbwrapper.so.0.3.0 # This library (~30 KB)
+    libxgbwrapper.so      # Symlink → 0.3.0
+    libxgbwrapper.so.0    # Symlink → 0.3.0
+```
+
+Models are saved to `quality_control_room/models/`:
+
+```
+models/
+├── xgb_Beta_5_20260120_003525.ubj
+├── xgb_Beta_10_20260120_003531.ubj
+├── xgb_Normal_5_20260120_003554.ubj
+└── ...
 ```
 
 ---
