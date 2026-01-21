@@ -21,24 +21,34 @@ training:
   # Example: 10 * 10 * 10 = 1000 rows (debug), 100 * 100 * 100 = 1M rows (production)
   params_resolution: [10, 10]
   
-  # Population size multiplier (population_size = sample_size * this value)
-  population_multiplier: 100
+  # Population size for hypergeometric confidence intervals (must be > max sample_size)
+  population_size: 10000
 
 xgboost:
+  # Core
   booster: "gbtree"
   objective: "reg:squarederror"
   eval_metric: "rmse"
-  n_thread: "4"
+  
+  # Tree structure
+  max_depth: "4"
+  gamma: "0.1"
+  
+  # Learning
+  eta: "0.1"
+  num_round: "200"
+  
+  # Sampling (regularization)
   subsample: "0.8"
+  colsample_bytree: "0.8"
+  
+  # L1/L2 regularization
   reg_alpha: "0.1"
   reg_lambda: "1.0"
-  max_depth: "6"
-  gamma: "0.0"
-  learning_rate: "0.1"
-  colsample_bytree: "0.8"
-  eta: "0.3"
-  n_estimators: "100"
-  random_state: "42"
+  
+  # System
+  nthread: "0"
+  seed: "42"
 
 output:
   # Output directory for trained models (relative to project root)

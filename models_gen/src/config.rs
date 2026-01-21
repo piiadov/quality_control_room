@@ -33,8 +33,8 @@ pub struct TrainingConfig {
     /// Parameter grid resolution [p1_resolution, p2_resolution]
     pub params_resolution: [usize; 2],
     
-    /// Population size multiplier
-    pub population_multiplier: usize,
+    /// Population size for hypergeometric confidence intervals
+    pub population_size: usize,
 }
 
 /// XGBoost hyperparameters
@@ -43,17 +43,16 @@ pub struct XGBoostConfig {
     pub booster: String,
     pub objective: String,
     pub eval_metric: String,
-    pub n_thread: String,
-    pub subsample: String,
-    pub reg_alpha: String,
-    pub reg_lambda: String,
     pub max_depth: String,
     pub gamma: String,
-    pub learning_rate: String,
-    pub colsample_bytree: String,
     pub eta: String,
-    pub n_estimators: String,
-    pub random_state: String,
+    pub num_round: String,
+    pub subsample: String,
+    pub colsample_bytree: String,
+    pub reg_alpha: String,
+    pub reg_lambda: String,
+    pub nthread: String,
+    pub seed: String,
 }
 
 impl XGBoostConfig {
@@ -63,17 +62,16 @@ impl XGBoostConfig {
             ("booster", self.booster.clone()),
             ("objective", self.objective.clone()),
             ("eval_metric", self.eval_metric.clone()),
-            ("nthread", self.n_thread.clone()),
-            ("subsample", self.subsample.clone()),
-            ("reg_alpha", self.reg_alpha.clone()),
-            ("reg_lambda", self.reg_lambda.clone()),
             ("max_depth", self.max_depth.clone()),
             ("gamma", self.gamma.clone()),
-            ("learning_rate", self.learning_rate.clone()),
-            ("colsample_bytree", self.colsample_bytree.clone()),
             ("eta", self.eta.clone()),
-            ("n_estimators", self.n_estimators.clone()),
-            ("random_state", self.random_state.clone()),
+            ("n_estimators", self.num_round.clone()),  // XGBoost C API uses n_estimators
+            ("subsample", self.subsample.clone()),
+            ("colsample_bytree", self.colsample_bytree.clone()),
+            ("reg_alpha", self.reg_alpha.clone()),
+            ("reg_lambda", self.reg_lambda.clone()),
+            ("nthread", self.nthread.clone()),
+            ("seed", self.seed.clone()),
         ]
     }
 }

@@ -109,7 +109,7 @@ fn main() {
             println!("┌─ Sample size: {}", sample_size);
             let start = Instant::now();
 
-            let population_size = sample_size * config.training.population_multiplier;
+            let population_size = config.training.population_size;
 
             // Calculate confidence intervals
             let (cdf_min, cdf_max) = conf_int(population_size, sample_size);
