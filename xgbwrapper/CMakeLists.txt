@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(xgbwrapper 
-    VERSION 0.3.0 
+    VERSION 0.4.0 
     DESCRIPTION "XGBoost C wrapper library for quality control applications"
     LANGUAGES C
 )

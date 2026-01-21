@@ -24,6 +24,11 @@ use std::fs;
 use std::path::Path;
 use std::time::Instant;
 
+/// Number of feature columns (fitted params: min_p1, min_p2, max_p1, max_p2)
+const X_COLS: usize = 4;
+/// Number of target columns (distribution params: p1, p2)
+const Y_COLS: usize = 2;
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let config_path = if args.len() > 1 { &args[1] } else { "config.yaml" };
@@ -110,7 +115,7 @@ fn main() {
             let (cdf_min, cdf_max) = conf_int(population_size, sample_size);
 
             // Prepare features using CDF curve fitting
-            println!("  ├─ Fitting CDF curves...");
+            println!("├─ Fitting CDF curves...");
             let x = features_prepare_nm(sample_size, cdf_min, cdf_max, dist.clone(), &kind);
 
             // Flatten data for FFI
@@ -119,14 +124,14 @@ fn main() {
 
             // Train model with evaluation (xgbwrapper handles split, train, predict, RMSE)
             let model_name = format!("xgb_{}_{}", kind, sample_size);
-            println!("  ├─ Training model: {} (train ratio: {:.0}%)...", model_name, train_ratio * 100.0);
+            println!("├─ Training model: {} (train ratio: {:.0}%)...", model_name, train_ratio * 100.0);
 
             let result = match xgb::train_eval(
                 &x_flat,
                 &y_flat,
                 rows,
-                4,
-                2,
+                X_COLS,
+                Y_COLS,
                 train_ratio,
                 &xgb_params,
                 models_dir,

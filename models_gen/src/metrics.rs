@@ -80,8 +80,8 @@ impl MetricsWriter {
 
 /// Print metrics summary to console
 pub fn print_metrics_summary(metrics: &TrainingMetrics) {
-    println!("  ├─ Data size: {} rows", metrics.data_size);
-    println!("  ├─ Elapsed: {:.2} min", metrics.elapsed_time_min);
-    println!("  ├─ RMSE: [{:.6}, {:.6}]", metrics.rmse[0], metrics.rmse[1]);
-    println!("  └─ Model: {}", metrics.model_path);
+    println!("├─ Data size: {} rows", metrics.data_size);
+    println!("├─ Elapsed: {:.2} min", metrics.elapsed_time_min);
+    println!("├─ RMSE: [{:.6}, {:.6}]", metrics.rmse[0], metrics.rmse[1]);
+    println!("└─ Model: {}", metrics.model_path);
 }

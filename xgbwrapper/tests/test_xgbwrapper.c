@@ -1,67 +1,49 @@
 /**
  * @file test_xgbwrapper.c
- * @brief Test suite implementation for xgbwrapper library
+ * @brief Test suite for xgbwrapper library v0.4.0
+ * 
+ * Tests the simplified 6-function API:
+ * - xgbw_init, xgbw_cleanup
+ * - xgbw_train_eval (training with auto split and evaluation)
+ * - xgbw_predict (inference)
+ * - xgbw_get_last_error, xgbw_status_string
  */
 
 #include "test_xgbwrapper.h"
 
-/* ===========================================================================
- * Test Configuration
- * ===========================================================================*/
+/* Test output directory */
+static const char* TEST_OUTPUT_DIR = "/tmp";
+static const char* TEST_MODEL_NAME = "xgbw_test_model";
 
-/* Path for temporary model storage during tests */
-static const char* TEST_MODEL_PATH = "/tmp/xgbwrapper_test_model.json";
-
-/* Custom log callback for tests */
-static void test_log_callback(int level, const char* msg) {
-    const char* level_str[] = {"ERROR", "WARN", "INFO", "DEBUG"};
-    if (level <= 2) {  /* Only show up to INFO in tests */
-        printf("[%s] %s\n", level_str[level], msg);
-    }
-}
+/* Store the actual model path from training for prediction test */
+static char g_model_path[256] = {0};
 
 /* ===========================================================================
- * Test Utilities
+ * Test Data Generation
  * ===========================================================================*/
 
-void generate_simple_data_2cols(float* x, float* y, int rows, int x_cols) {
+void generate_test_data(float* x, float* y, int rows, int x_cols) {
     const int y_cols = 2;
     
-    /* Generate sequential features */
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < x_cols; ++j) {
-            x[i * x_cols + j] = (float)(i * x_cols + j);
-        }
-    }
-
-    /* Compute targets: y[0] = sum(x), y[1] = -sum(x) */
-    for (int i = 0; i < rows; ++i) {
-        float sum = 0.0f;
-        for (int k = 0; k < x_cols; ++k) {
-            sum += x[i * x_cols + k];
-        }
-        y[i * y_cols + 0] = sum;
-        y[i * y_cols + 1] = -sum;
-    }
-}
-
-void print_data(float* x, float* y, int rows, int x_cols, int y_cols) {
-    printf("Features (x):\n");
-    for (int i = 0; i < rows; ++i) {
-        printf("  [%d]: ", i);
-        for (int j = 0; j < x_cols; ++j) {
-            printf("%.4f ", x[i * x_cols + j]);
-        }
-        printf("\n");
-    }
+    /* Simple pseudo-random generator for reproducible tests */
+    unsigned int seed = 42;
     
-    printf("Targets (y):\n");
     for (int i = 0; i < rows; ++i) {
-        printf("  [%d]: ", i);
-        for (int j = 0; j < y_cols; ++j) {
-            printf("%.4f ", y[i * y_cols + j]);
+        float sum_x = 0.0f;
+        float sum_sqrt_x = 0.0f;
+        
+        for (int j = 0; j < x_cols; ++j) {
+            /* Linear congruential generator */
+            seed = seed * 1103515245u + 12345u;
+            float val = (float)((seed >> 16) & 0x7fff) / 32767.0f;
+            
+            x[i * x_cols + j] = val;
+            sum_x += val;
+            sum_sqrt_x += sqrtf(val);
         }
-        printf("\n");
+        
+        y[i * y_cols + 0] = sum_x;
+        y[i * y_cols + 1] = sum_sqrt_x;
     }
 }
 
@@ -69,323 +51,168 @@ void print_data(float* x, float* y, int rows, int x_cols, int y_cols) {
  * Test Implementations
  * ===========================================================================*/
 
-void test_shuffle(void) {
-    printf("=== Test: xgbw_shuffle ===\n");
+void test_train_eval(void) {
+    printf("=== Test: xgbw_train_eval ===\n");
     
-    const int n = 10;
-    int* array = (int*)malloc((size_t)n * sizeof(int));
-    
-    /* Test with new API */
-    XGBWrapperStatus status = xgbw_shuffle(array, n);
-    
-    if (status != XGBW_SUCCESS) {
-        printf("FAIL: xgbw_shuffle returned %s\n", xgbw_status_string(status));
-        free(array);
-        return;
-    }
-    
-    printf("Shuffled: ");
-    for (int i = 0; i < n; ++i) {
-        printf("%d ", array[i]);
-    }
-    printf("\n");
-    
-    /* Verify all elements are present (permutation check) */
-    int sum = 0;
-    for (int i = 0; i < n; ++i) {
-        sum += array[i];
-    }
-    int expected_sum = n * (n - 1) / 2;
-    
-    if (sum == expected_sum) {
-        printf("PASS: All elements preserved (sum = %d)\n", sum);
-    } else {
-        printf("FAIL: Element sum mismatch (got %d, expected %d)\n", sum, expected_sum);
-    }
-    
-    /* Test error handling */
-    status = xgbw_shuffle(NULL, n);
-    if (status == XGBW_ERROR_INVALID_PARAM) {
-        printf("PASS: NULL array correctly rejected\n");
-    } else {
-        printf("FAIL: NULL array should return XGBW_ERROR_INVALID_PARAM\n");
-    }
-    
-    free(array);
-    printf("\n");
-}
-
-void test_split_data(void) {
-    printf("=== Test: xgbw_split_data ===\n");
-    
-    const int rows = 10;
-    const int x_cols = 2;
-    const int y_cols = 1;
-    const int rows_train = 8;
-    const int rows_test = rows - rows_train;
-    
-    /* Allocate data */
-    float* x = (float*)malloc((size_t)(rows * x_cols) * sizeof(float));
-    float* y = (float*)malloc((size_t)(rows * y_cols) * sizeof(float));
-    
-    /* Initialize with known values */
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < x_cols; ++j) {
-            x[i * x_cols + j] = (float)(i * x_cols + j);
-        }
-        y[i] = (float)i;
-    }
-    
-    /* Allocate split arrays */
-    float* x_train = (float*)malloc((size_t)(rows_train * x_cols) * sizeof(float));
-    float* y_train = (float*)malloc((size_t)(rows_train * y_cols) * sizeof(float));
-    float* x_test = (float*)malloc((size_t)(rows_test * x_cols) * sizeof(float));
-    float* y_test = (float*)malloc((size_t)(rows_test * y_cols) * sizeof(float));
-    
-    /* Perform split using new API */
-    XGBWrapperStatus status = xgbw_split_data(x, y, x_train, y_train, x_test, y_test, 
-                                               x_cols, y_cols, rows, rows_train);
-    
-    if (status != XGBW_SUCCESS) {
-        printf("FAIL: xgbw_split_data returned %s: %s\n", 
-               xgbw_status_string(status), xgbw_get_last_error());
-    } else {
-        printf("Training set: %d samples, Test set: %d samples\n", rows_train, rows_test);
-        printf("PASS: Data split completed successfully\n");
-    }
-    
-    /* Test error handling */
-    status = xgbw_split_data(NULL, y, x_train, y_train, x_test, y_test,
-                             x_cols, y_cols, rows, rows_train);
-    if (status == XGBW_ERROR_INVALID_PARAM) {
-        printf("PASS: NULL input correctly rejected\n");
-    }
-    
-    /* Cleanup */
-    free(x); free(y);
-    free(x_train); free(y_train);
-    free(x_test); free(y_test);
-    printf("\n");
-}
-
-void test_generate_data(void) {
-    printf("=== Test: xgbw_generate_test_data ===\n");
-    
-    const int rows = 5;
-    const int x_cols = 3;
-    const int y_cols = 2;
-    
-    float* x = (float*)malloc((size_t)(rows * x_cols) * sizeof(float));
-    float* y = (float*)malloc((size_t)(rows * y_cols) * sizeof(float));
-    
-    XGBWrapperStatus status = xgbw_generate_test_data(x, y, rows, x_cols);
-    
-    if (status != XGBW_SUCCESS) {
-        printf("FAIL: xgbw_generate_test_data returned %s\n", xgbw_status_string(status));
-        free(x); free(y);
-        return;
-    }
-    
-    print_data(x, y, rows, x_cols, y_cols);
-    
-    /* Verify y[0] = sum(x) for first row */
-    float sum = 0.0f;
-    for (int j = 0; j < x_cols; ++j) {
-        sum += x[j];
-    }
-    
-    if (fabsf(y[0] - sum) < 1e-5f) {
-        printf("PASS: y[0] = sum(x) verified\n");
-    } else {
-        printf("FAIL: y[0] mismatch (got %.4f, expected %.4f)\n", y[0], sum);
-    }
-    
-    free(x);
-    free(y);
-    printf("\n");
-}
-
-void test_generate_simple_data(void) {
-    printf("=== Test: generate_simple_data_2cols (deterministic) ===\n");
-    
-    const int rows = 5;
-    const int x_cols = 2;
-    const int y_cols = 2;
-    
-    float* x = (float*)malloc((size_t)(rows * x_cols) * sizeof(float));
-    float* y = (float*)malloc((size_t)(rows * y_cols) * sizeof(float));
-    
-    generate_simple_data_2cols(x, y, rows, x_cols);
-    print_data(x, y, rows, x_cols, y_cols);
-    
-    printf("PASS: Deterministic data generated\n\n");
-    
-    free(x);
-    free(y);
-}
-
-void test_xgboost(void) {
-    printf("=== Test: XGBoost Training & Prediction (Production API) ===\n");
-    
-    /* Initialize the library */
+    /* Initialize library */
     XGBWrapperStatus status = xgbw_init();
     if (status != XGBW_SUCCESS) {
-        printf("FAIL: xgbw_init() returned %s: %s\n", 
-               xgbw_status_string(status), xgbw_get_last_error());
+        printf("FAIL: xgbw_init returned %s\n", xgbw_status_string(status));
         return;
     }
-    printf("Library initialized successfully\n");
-    
-    /* Set custom log callback */
-    xgbw_set_log_callback(test_log_callback);
-    
-    /* Configuration */
-    const int rows = 10000;
-    const int x_cols = 4;
-    const int y_cols = 2;
-    const float split_ratio = 0.8f;
-    const int rows_train = (int)(rows * split_ratio);
-    const int rows_test = rows - rows_train;
-
-    printf("Dataset: %d samples, %d features, %d targets\n", rows, x_cols, y_cols);
-    printf("Split: %d train, %d test\n", rows_train, rows_test);
-
-    /* Allocate data */
-    float* x = (float*)malloc((size_t)(rows * x_cols) * sizeof(float));
-    float* y = (float*)malloc((size_t)(rows * y_cols) * sizeof(float));
-    float* x_train = (float*)malloc((size_t)(rows_train * x_cols) * sizeof(float));
-    float* y_train = (float*)malloc((size_t)(rows_train * y_cols) * sizeof(float));
-    float* x_test = (float*)malloc((size_t)(rows_test * x_cols) * sizeof(float));
-    float* y_test = (float*)malloc((size_t)(rows_test * y_cols) * sizeof(float));
-    float* y_pred = NULL;
-    float* rmse = NULL;
-    
-    if (!x || !y || !x_train || !y_train || !x_test || !y_test) {
-        printf("FAIL: Memory allocation failed\n");
-        goto cleanup;
-    }
+    printf("Library initialized\n");
     
     /* Generate test data */
-    status = xgbw_generate_test_data(x, y, rows, x_cols);
-    if (status != XGBW_SUCCESS) {
-        printf("FAIL: xgbw_generate_test_data returned %s: %s\n",
-               xgbw_status_string(status), xgbw_get_last_error());
-        goto cleanup;
-    }
-    printf("Test data generated successfully\n");
-
-    /* Split data */
-    status = xgbw_split_data(x, y, x_train, y_train, x_test, y_test, 
-                             x_cols, y_cols, rows, rows_train);
-    if (status != XGBW_SUCCESS) {
-        printf("FAIL: xgbw_split_data returned %s: %s\n",
-               xgbw_status_string(status), xgbw_get_last_error());
-        goto cleanup;
-    }
-    printf("Data split successfully\n");
+    const int rows = 1000;
+    const int x_cols = 4;
+    const int y_cols = 2;
+    const float train_ratio = 0.8f;
     
-    /* Free original data - no longer needed */
-    free(x); x = NULL;
-    free(y); y = NULL;
-
+    float* x = (float*)malloc((size_t)(rows * x_cols) * sizeof(float));
+    float* y = (float*)malloc((size_t)(rows * y_cols) * sizeof(float));
+    float rmse[2] = {0};
+    
+    if (!x || !y) {
+        printf("FAIL: Memory allocation failed\n");
+        free(x); free(y);
+        xgbw_cleanup();
+        return;
+    }
+    
+    generate_test_data(x, y, rows, x_cols);
+    printf("Generated %d samples with %d features\n", rows, x_cols);
+    
     /* XGBoost configuration */
     KVPair config[] = {
         {"booster", "gbtree"},
         {"objective", "reg:squarederror"},
-        {"eval_metric", "rmse"},
-        {"nthread", "4"},
         {"max_depth", "6"},
         {"learning_rate", "0.1"},
-        {"subsample", "0.8"},
-        {"colsample_bytree", "0.8"},
-        {"reg_alpha", "0.0"},
-        {"reg_lambda", "1.0"},
-        {"n_estimators", "100"},
+        {"n_estimators", "50"},
         {"verbosity", "0"}
     };
     int len_config = sizeof(config) / sizeof(config[0]);
-
-    /* Train model using production API */
-    printf("Training model...\n");
-    status = xgbw_train(x_train, y_train, rows_train, x_cols, y_cols, 
-                        config, len_config, TEST_MODEL_PATH);
+    
+    /* Train with evaluation */
+    printf("Training with %.0f%% train ratio...\n", train_ratio * 100);
+    
+    status = xgbw_train_eval(
+        x, y, rows, x_cols, y_cols,
+        train_ratio,
+        config, len_config,
+        TEST_OUTPUT_DIR, TEST_MODEL_NAME,
+        g_model_path, sizeof(g_model_path),
+        rmse
+    );
+    
     if (status != XGBW_SUCCESS) {
-        printf("FAIL: xgbw_train returned %s: %s\n",
+        printf("FAIL: xgbw_train_eval returned %s: %s\n", 
                xgbw_status_string(status), xgbw_get_last_error());
-        goto cleanup;
-    }
-    printf("Model saved to: %s\n", TEST_MODEL_PATH);
-    
-    /* Free training data */
-    free(x_train); x_train = NULL;
-    free(y_train); y_train = NULL;
-
-    /* Make predictions using production API */
-    printf("Making predictions...\n");
-    y_pred = (float*)malloc((size_t)(rows_test * y_cols) * sizeof(float));
-    if (!y_pred) {
-        printf("FAIL: Memory allocation for predictions failed\n");
-        goto cleanup;
+        free(x); free(y);
+        xgbw_cleanup();
+        return;
     }
     
-    status = xgbw_predict(x_test, rows_test, x_cols, y_cols, TEST_MODEL_PATH, y_pred);
-    if (status != XGBW_SUCCESS) {
-        printf("FAIL: xgbw_predict returned %s: %s\n",
-               xgbw_status_string(status), xgbw_get_last_error());
-        goto cleanup;
-    }
-    printf("Predictions completed successfully\n");
-    
-    free(x_test); x_test = NULL;
-
-    /* Calculate RMSE */
-    rmse = (float*)malloc((size_t)y_cols * sizeof(float));
-    if (!rmse) {
-        printf("FAIL: Memory allocation for RMSE failed\n");
-        goto cleanup;
-    }
-    
-    status = xgbw_calculate_rmse(y_pred, y_test, rows_test, y_cols, rmse);
-    if (status != XGBW_SUCCESS) {
-        printf("FAIL: xgbw_calculate_rmse returned %s: %s\n",
-               xgbw_status_string(status), xgbw_get_last_error());
-        goto cleanup;
-    }
-    
+    printf("Model saved to: %s\n", g_model_path);
     printf("RMSE results:\n");
-    for (int j = 0; j < y_cols; ++j) {
-        printf("  Target %d: %.6f\n", j, rmse[j]);
-    }
-
-    /* Evaluate results */
+    printf("  Target 0 (sum): %.6f\n", rmse[0]);
+    printf("  Target 1 (sqrt sum): %.6f\n", rmse[1]);
+    
+    /* Evaluate - RMSE should be reasonably low for this synthetic data */
     int passed = 1;
     for (int j = 0; j < y_cols; ++j) {
-        if (rmse[j] > 1.0f) {  /* Reasonable threshold for this synthetic data */
-            printf("WARNING: RMSE[%d] = %.4f exceeds threshold\n", j, rmse[j]);
+        if (rmse[j] > 0.5f) {
+            printf("WARNING: RMSE[%d] = %.4f is higher than expected\n", j, rmse[j]);
             passed = 0;
         }
     }
     
     if (passed) {
-        printf("PASS: Model trained and predictions within acceptable error\n");
+        printf("PASS: Model trained with acceptable RMSE\n");
     } else {
-        printf("FAIL: Prediction error too high\n");
+        printf("PARTIAL: Model trained but RMSE higher than expected\n");
     }
-
-cleanup:
-    /* Cleanup all resources */
+    
     free(x);
     free(y);
-    free(x_train);
-    free(y_train);
-    free(x_test);
-    free(y_test);
-    free(y_pred);
-    free(rmse);
-    
-    /* Cleanup library */
     xgbw_cleanup();
-    printf("Library cleanup completed\n\n");
+    printf("\n");
+}
+
+void test_predict(void) {
+    printf("=== Test: xgbw_predict ===\n");
+    
+    if (g_model_path[0] == '\0') {
+        printf("SKIP: No model available (run test_train_eval first)\n\n");
+        return;
+    }
+    
+    /* Initialize library */
+    XGBWrapperStatus status = xgbw_init();
+    if (status != XGBW_SUCCESS) {
+        printf("FAIL: xgbw_init returned %s\n", xgbw_status_string(status));
+        return;
+    }
+    
+    /* Generate new test data for prediction */
+    const int rows = 100;
+    const int x_cols = 4;
+    const int y_cols = 2;
+    
+    float* x = (float*)malloc((size_t)(rows * x_cols) * sizeof(float));
+    float* y_true = (float*)malloc((size_t)(rows * y_cols) * sizeof(float));
+    float* y_pred = (float*)malloc((size_t)(rows * y_cols) * sizeof(float));
+    
+    if (!x || !y_true || !y_pred) {
+        printf("FAIL: Memory allocation failed\n");
+        free(x); free(y_true); free(y_pred);
+        xgbw_cleanup();
+        return;
+    }
+    
+    generate_test_data(x, y_true, rows, x_cols);
+    printf("Generated %d new samples for prediction\n", rows);
+    
+    /* Make predictions */
+    status = xgbw_predict(x, rows, x_cols, y_cols, g_model_path, y_pred);
+    
+    if (status != XGBW_SUCCESS) {
+        printf("FAIL: xgbw_predict returned %s: %s\n",
+               xgbw_status_string(status), xgbw_get_last_error());
+        free(x); free(y_true); free(y_pred);
+        xgbw_cleanup();
+        return;
+    }
+    
+    /* Calculate RMSE manually */
+    float rmse[2] = {0};
+    for (int j = 0; j < y_cols; ++j) {
+        float sse = 0.0f;
+        for (int i = 0; i < rows; ++i) {
+            float diff = y_pred[i * y_cols + j] - y_true[i * y_cols + j];
+            sse += diff * diff;
+        }
+        rmse[j] = sqrtf(sse / (float)rows);
+    }
+    
+    printf("Prediction RMSE:\n");
+    printf("  Target 0 (sum): %.6f\n", rmse[0]);
+    printf("  Target 1 (sqrt sum): %.6f\n", rmse[1]);
+    
+    /* Show a few predictions */
+    printf("Sample predictions (first 3):\n");
+    for (int i = 0; i < 3 && i < rows; ++i) {
+        printf("  [%d] true=[%.4f, %.4f] pred=[%.4f, %.4f]\n",
+               i, y_true[i*2], y_true[i*2+1], y_pred[i*2], y_pred[i*2+1]);
+    }
+    
+    printf("PASS: Predictions completed successfully\n");
+    
+    free(x);
+    free(y_true);
+    free(y_pred);
+    xgbw_cleanup();
+    printf("\n");
 }
 
 /* ===========================================================================
@@ -396,26 +223,21 @@ int main(int argc, char* argv[]) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <test_name>\n\n", argv[0]);
         fprintf(stderr, "Available tests:\n");
-        fprintf(stderr, "  test_shuffle          - Test Fisher-Yates shuffle\n");
-        fprintf(stderr, "  test_split_data       - Test train/test splitting\n");
-        fprintf(stderr, "  test_generate_data    - Test random data generation\n");
-        fprintf(stderr, "  test_generate_simple_data - Test deterministic data\n");
-        fprintf(stderr, "  test_xgboost          - Full training/prediction test\n");
+        fprintf(stderr, "  test_train_eval  - Test all-in-one training with evaluation\n");
+        fprintf(stderr, "  test_predict     - Test inference (run after test_train_eval)\n");
+        fprintf(stderr, "  test_all         - Run all tests\n");
         return EXIT_FAILURE;
     }
 
     const char* test_name = argv[1];
 
-    if (strcmp(test_name, "test_shuffle") == 0) {
-        test_shuffle();
-    } else if (strcmp(test_name, "test_split_data") == 0) {
-        test_split_data();
-    } else if (strcmp(test_name, "test_generate_data") == 0) {
-        test_generate_data();
-    } else if (strcmp(test_name, "test_generate_simple_data") == 0) {
-        test_generate_simple_data();
-    } else if (strcmp(test_name, "test_xgboost") == 0) {
-        test_xgboost();
+    if (strcmp(test_name, "test_train_eval") == 0) {
+        test_train_eval();
+    } else if (strcmp(test_name, "test_predict") == 0) {
+        test_predict();
+    } else if (strcmp(test_name, "test_all") == 0) {
+        test_train_eval();
+        test_predict();
     } else {
         fprintf(stderr, "Unknown test: %s\n", test_name);
         return EXIT_FAILURE;

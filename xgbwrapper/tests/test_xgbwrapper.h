@@ -1,6 +1,6 @@
 /**
  * @file test_xgbwrapper.h
- * @brief Test suite for xgbwrapper library
+ * @brief Test suite for xgbwrapper library v0.4.0
  */
 
 #ifndef TEST_XGBWRAPPER_H
@@ -9,56 +9,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <math.h>
 
 #include "xgbwrapper.h"
 
-/* ===========================================================================
- * Test Function Declarations
- * ===========================================================================*/
-
 /**
- * @brief Test the shuffle function
+ * @brief Test xgbw_train_eval (all-in-one training with evaluation)
  */
-void test_shuffle(void);
+void test_train_eval(void);
 
 /**
- * @brief Test train/test data splitting
+ * @brief Test xgbw_predict (inference on saved model)
  */
-void test_split_data(void);
+void test_predict(void);
 
 /**
- * @brief Test random data generation
- */
-void test_generate_data(void);
-
-/**
- * @brief Test deterministic data generation
- */
-void test_generate_simple_data(void);
-
-/**
- * @brief End-to-end XGBoost training and prediction test
- */
-void test_xgboost(void);
-
-/* ===========================================================================
- * Test Utilities
- * ===========================================================================*/
-
-/**
- * @brief Generate deterministic test data
+ * @brief Generate synthetic test data with known relationships
+ * @param x Output features (rows * x_cols)
+ * @param y Output targets (rows * y_cols)
+ * @param rows Number of samples
+ * @param x_cols Number of features
  * 
- * Creates sequential features and computes:
- *   y[0] = sum(x)
- *   y[1] = -sum(x)
+ * y[0] = sum(x), y[1] = sum(sqrt(x))
  */
-void generate_simple_data_2cols(float* x, float* y, int rows, int x_cols);
-
-/**
- * @brief Print data matrices for debugging
- */
-void print_data(float* x, float* y, int rows, int x_cols, int y_cols);
+void generate_test_data(float* x, float* y, int rows, int x_cols);
 
 #endif /* TEST_XGBWRAPPER_H */

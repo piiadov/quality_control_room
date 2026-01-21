@@ -25,7 +25,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 LIB_DIR="$PROJECT_ROOT/lib"
 XGBOOST_DIR="$PROJECT_ROOT/xgboost"
 XGBOOST_REPO="https://github.com/dmlc/xgboost.git"
-XGBOOST_VERSION="v3.0.0"  # Stable release
+XGBOOST_VERSION="v3.1.3"  # Stable release
 
 # Build configuration
 BUILD_TYPE="release"
@@ -116,9 +116,24 @@ clone_xgboost() {
             log_success "XGBoost $XGBOOST_VERSION already cloned"
             return 0
         else
-            log_warn "XGBoost version mismatch (found: $current_tag, expected: $XGBOOST_VERSION)"
+            log_info "XGBoost version $current_tag found, will update to $XGBOOST_VERSION"
+            log_info "Fetching and checking out $XGBOOST_VERSION..."
+            
+            # Fetch the new tag (unshallow if needed for shallow clones)
+            git fetch --tags --depth 1 origin "$XGBOOST_VERSION" || {
+                log_info "Trying to unshallow and fetch..."
+                git fetch --unshallow 2>/dev/null || true
+                git fetch --tags origin "$XGBOOST_VERSION" || die "Failed to fetch $XGBOOST_VERSION"
+            }
+            
+            # Checkout the new version
+            git checkout "$XGBOOST_VERSION" || die "Failed to checkout $XGBOOST_VERSION"
+            
+            # Update submodules for the new version
             log_info "Updating submodules..."
-            git submodule update --init --recursive
+            git submodule update --init --recursive || die "Failed to update submodules"
+            
+            log_success "XGBoost updated to $XGBOOST_VERSION"
         fi
     else
         log_info "Cloning XGBoost $XGBOOST_VERSION..."
@@ -268,6 +283,27 @@ run_tests() {
     log_success "All tests passed"
 }
 
+create_xgbwrapper_symlink() {
+    log_info "Creating xgbwrapper symlink..."
+    
+    cd "$LIB_DIR"
+    
+    # Find versioned library (e.g., libxgbwrapper.so.0.3.0)
+    local versioned_lib=$(ls libxgbwrapper.so.* 2>/dev/null | head -n1)
+    
+    if [ -z "$versioned_lib" ]; then
+        die "Cannot find versioned libxgbwrapper.so.* in $LIB_DIR"
+    fi
+    
+    # Remove existing symlink if present
+    [ -L "$LIB_DIR/libxgbwrapper.so" ] && rm -f "$LIB_DIR/libxgbwrapper.so"
+    
+    # Create symlink without version for easier linking
+    ln -sf "$versioned_lib" "$LIB_DIR/libxgbwrapper.so"
+    
+    log_success "Created symlink: libxgbwrapper.so -> $versioned_lib"
+}
+
 # ==============================================================================
 # Summary
 # ==============================================================================
@@ -349,6 +385,9 @@ main() {
     # Build xgbwrapper
     build_xgbwrapper
     run_tests
+    
+    # Create symlink for version-independent linking
+    create_xgbwrapper_symlink
     
     print_summary
 }
