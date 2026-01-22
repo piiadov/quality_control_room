@@ -6,8 +6,8 @@ export default defineConfig(({ command }) => {
   const config = {
     plugins: [vue()],
     server: {
-      host: 'quality-control.io',
-      port: '5725',
+      host: 'localhost',
+      port: 5725,
     }
   }
 

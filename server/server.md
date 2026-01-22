@@ -17,16 +17,19 @@ The Quality Control Room server is a WebSocket API server for statistical analys
                           │ WebSocket (JSON)
 ┌─────────────────────────▼───────────────────────────────────┐
 │                      main.rs                                │
-│  - TLS/non-TLS server setup                                 │
-│  - WebSocket connection handling                            │
-│  - Request routing                                          │
+│  - TLS/non-TLS server setup (conditional compilation)       │
+│  - WebSocket upgrade, tracing init                          │
+│  - Routes via api::router()                                 │
 └─────────────────────────┬───────────────────────────────────┘
                           │
 ┌─────────────────────────▼───────────────────────────────────┐
-│                       api.rs                                │
-│  - ApiRequest / ApiResponse types                           │
-│  - Command handlers (analyze, get_cdf, etc.)                │
-│  - AppState (config, model lookup)                          │
+│                      api/ module                            │
+│  ├── mod.rs       - router(), handle_request()              │
+│  ├── types.rs     - ApiRequest, ApiResponse                 │
+│  ├── state.rs     - AppState, find_model()                  │
+│  ├── analyze.rs   - handle_about(), handle_analyze()        │
+│  ├── curves.rs    - handle_get_intervals/cdf/pdf()          │
+│  └── histogram.rs - handle_get_histogram()                  │
 └──────────┬──────────────────────────────────┬───────────────┘
            │                                  │
 ┌──────────▼──────────┐          ┌────────────▼────────────────┐
@@ -391,13 +394,32 @@ All responses include `success: bool` and `message: Option<String>`.
 | Debug | `cargo build` | Disabled (HTTP) | Local development |
 | Release | `cargo build --release` | **Required** (HTTPS) | Production |
 
+### Using run.sh (Recommended)
+
+```bash
+# Debug mode (HTTP only, TLS config ignored)
+./run.sh debug
+
+# Release mode (HTTPS required, TLS must be configured)
+./run.sh release
+
+# With custom config
+./run.sh debug /path/to/config.yaml
+```
+
+The script sets `LD_LIBRARY_PATH` for xgbwrapper and runs the server.
+
+### Manual Build
+
 ```bash
 # Debug build (HTTP only, TLS config ignored)
 cargo build
+export LD_LIBRARY_PATH="../lib:$LD_LIBRARY_PATH"
 ./target/debug/server
 
 # Release build (HTTPS required, TLS must be configured)
 cargo build --release
+export LD_LIBRARY_PATH="../lib:$LD_LIBRARY_PATH"
 ./target/release/server
 ```
 

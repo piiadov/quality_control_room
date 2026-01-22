@@ -1,5 +1,5 @@
 <script setup>
-import WebSocketService from '../../services/websocketService.js'
+import ApiService from '../../services/api.js'
 import { ref, computed, watch } from 'vue';
 import { settingsStore, betaStore, sidebarStore} from '../../store/index.js';
 import { useI18n, } from 'vue-i18n';
@@ -30,9 +30,9 @@ const handleFileUpload = (event) => {
   }
 };
 
-const batchVolumeInput = ref(null);
-const batchVolumeInputTestMode = computed(() =>
-  !isNaN(beta.batchVolume) ? beta.batchVolume : ''
+const populationSizeInput = ref(null);
+const populationSizeInputTestMode = computed(() =>
+  !isNaN(beta.populationSize) ? beta.populationSize : ''
 );
 
 const minValueInput = ref(null);
@@ -44,17 +44,17 @@ const maxValueInputTestMode = computed(() =>
   !isNaN(beta.maxValue) ? beta.maxValue : ''
 );
 
-const submitData = () => {
+const submitData = async () => {
   beta.errorMessage = "";
   if (!beta.testMode) {
-    const volume = parseInt(batchVolumeInput.value, 10);
-    if (isNaN(volume) || volume < 1) {
-      beta.errorMessage = 'Dscretization: Please enter valid positive integer number';
-      beta.batchVolume = NaN;
+    const popSize = parseInt(populationSizeInput.value, 10);
+    if (isNaN(popSize) || popSize < 1) {
+      beta.errorMessage = 'Population size: Please enter valid positive integer number';
+      beta.populationSize = NaN;
       beta.showResults = false;
       return;
     } else {
-      beta.batchVolume = volume;
+      beta.populationSize = popSize;
     }
 
     const minValue = parseFloat(minValueInput.value);
@@ -87,8 +87,8 @@ const submitData = () => {
       beta.samplingData = data;
     }
 
-    if (volume < data.length) {
-      beta.errorMessage = 'Batch volume or discretization factor must be greater than sampling size';
+    if (popSize < data.length) {
+      beta.errorMessage = 'Population size must be greater than sample size';
       beta.showResults = false;
       return;
     }
@@ -102,67 +102,79 @@ const submitData = () => {
   }
 
   beta.inputDisabled = true;
-  const ws = new WebSocketService(settings.backendUrl, settings.connectTimeout);
-  ws.connectAndSendData('calc', beta)
-    .then(response => {
-      if (response.data.error > 0) {
-        beta.errorMessage = 'Backend error: ' + response.data.info;
-        beta.inputDisabled = false;
-        beta.showResults = false;
-      } else {
-        beta.errorMessage = "";
-        beta.inputDisabled = false;
-        beta.batchVolume = response.data.population_size;
-        beta.minValue = response.data.min_value;
-        beta.maxValue = response.data.max_value;
-        beta.samplingData = response.data.data;
-        beta.info = response.data.info;
-        beta.scaledData = response.data.scaled_data;
-        beta.cdfMin = response.data.cdf_min;
-        beta.cdfMax = response.data.cdf_max;
-        beta.q = response.data.q;
-        beta.fittedCdfMin = response.data.fitted_cdf_min;
-        beta.fittedCdfMax = response.data.fitted_cdf_max;
-        beta.fittedPdfMin = response.data.fitted_pdf_min;
-        beta.fittedPdfMax = response.data.fitted_pdf_max;
-        beta.paramsMin = response.data.params_min;
-        beta.paramsMax = response.data.params_max;
-        beta.predictedParams = response.data.predicted_params;
-        beta.predictedCdf = response.data.predicted_cdf;
-        beta.predictedPdf = response.data.predicted_pdf;
-        beta.testModeParams = response.data.test_mode_params;
-        beta.testModeCdf = response.data.test_mode_cdf;
-        beta.testModePdf = response.data.test_mode_pdf;
-        beta.bins = response.data.bins;
-        beta.freq = response.data.freq;
-        beta.binsNumber = response.data.bins.length - 1;
-        beta.predictedChi2 = response.data.predicted_chi2;
-        beta.minChi2 = response.data.min_chi2;
-        beta.maxChi2 = response.data.max_chi2;
-        beta.testModeChi2 = response.data.test_mode_chi2;
-        beta.predictedPval = response.data.predicted_pval;
-        beta.minPval = response.data.min_pval;
-        beta.maxPval = response.data.max_pval;
-        beta.testModePval = response.data.test_mode_pval;
-        beta.critVal = response.data.crit_val;
-        beta.predictedDecision = response.data.predicted_decision;
-        beta.minDecision = response.data.min_decision;
-        beta.maxDecision = response.data.max_decision;
-        beta.testModeDecision = response.data.test_mode_decision;
-        beta.samplingMean = response.data.sampling_mean;
-        beta.samplingStd = response.data.sampling_std;
-        beta.samplingParams = response.data.sampling_params;
-        beta.samplingCdf = response.data.sampling_cdf;
-        beta.samplingPdf = response.data.sampling_pdf;
-        beta.showResults = true;
-        sidebar.sidebarResults = true;
-      }
-    })
-    .catch(error => {
-      beta.errorMessage = error.message;
+  const api = new ApiService(settings.backendUrl, settings.connectTimeout);
+  
+  try {
+    // Call fullAnalysis which handles all split commands
+    const result = await api.fullAnalysis(
+      beta.distribution,
+      beta.samplingData,
+      beta.minValue,
+      beta.maxValue,
+      beta.populationSize,
+      beta.binsNumber
+    );
+    
+    api.close();
+    
+    if (!result.success) {
+      beta.errorMessage = 'Backend error: ' + result.message;
       beta.inputDisabled = false;
       beta.showResults = false;
-    });
+      return;
+    }
+    
+    // Update store with results
+    beta.errorMessage = "";
+    beta.inputDisabled = false;
+    
+    // From analyze command
+    beta.sampleSize = result.sample_size;
+    beta.populationSize = result.population_size;
+    beta.minValue = result.min_value;
+    beta.maxValue = result.max_value;
+    beta.scaledData = result.scaled_data;
+    beta.paramsMin = result.params_min;
+    beta.paramsMax = result.params_max;
+    beta.predictedParams = result.predicted_params;
+    beta.samplingParams = result.sampling_params;
+    beta.chi2Min = result.chi2_min;
+    beta.chi2Max = result.chi2_max;
+    beta.chi2Pred = result.chi2_pred;
+    
+    // From get_intervals
+    beta.cdfMin = result.cdf_min;
+    beta.cdfMax = result.cdf_max;
+    
+    // From get_cdf
+    beta.domain = result.domain;
+    beta.fittedCdfMin = result.fitted_cdf_min;
+    beta.fittedCdfMax = result.fitted_cdf_max;
+    beta.predictedCdf = result.predicted_cdf;
+    beta.samplingCdf = result.sampling_cdf;
+    
+    // From get_pdf
+    beta.fittedPdfMin = result.fitted_pdf_min;
+    beta.fittedPdfMax = result.fitted_pdf_max;
+    beta.predictedPdf = result.predicted_pdf;
+    beta.samplingPdf = result.sampling_pdf;
+    
+    // From get_histogram
+    beta.binEdges = result.bin_edges;
+    beta.observedFreq = result.observed_freq;
+    beta.expectedFreqMin = result.expected_freq_min;
+    beta.expectedFreqMax = result.expected_freq_max;
+    beta.expectedFreqPred = result.expected_freq_pred;
+    
+    beta.showResults = true;
+    sidebar.sidebarResults = true;
+    
+  } catch (error) {
+    api.close();
+    beta.errorMessage = error.message;
+    beta.inputDisabled = false;
+    beta.showResults = false;
+  }
 };
 
 watch(() => beta.testMode, (newValue) => {
@@ -193,12 +205,12 @@ watch(() => beta.testMode, (newValue) => {
 
         <!-- Discretization and Min/Max values -->
       <div class="flex space-x-4">
-        <!-- Batch volume/discretization -->
+        <!-- Population size -->
         <div class="flex-1">
-          <label for="batch-volume" class="label-text">{{ t('beta.inputs.discretization') }}</label>
-          <input v-if="beta.testMode" v-model="batchVolumeInputTestMode" type="text" id="batch-volume" class="mt-2 w-full input-text"
+          <label for="population-size" class="label-text">{{ t('beta.inputs.discretization') }}</label>
+          <input v-if="beta.testMode" v-model="populationSizeInputTestMode" type="text" id="population-size" class="mt-2 w-full input-text"
                 :placeholder="t('beta.inputs.discretization-placeholder')" :disabled="beta.inputDisabled" readonly/>
-          <input v-else v-model="batchVolumeInput" type="text" id="batch-volume" class="mt-2 w-full input-text"
+          <input v-else v-model="populationSizeInput" type="text" id="population-size" class="mt-2 w-full input-text"
                 :placeholder="t('beta.inputs.discretization-placeholder')" :disabled="beta.inputDisabled"/>
 
         </div>

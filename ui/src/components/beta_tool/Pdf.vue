@@ -15,21 +15,21 @@ const pdfChartRef = ref(null);
 let pdfChart = null;
 
 const fittedPdfMin = computed(() =>
-  beta.q.map((x, i) => ({
+  beta.domain.map((x, i) => ({
     x: x,
     y: beta.fittedPdfMin[i],
   }))
 );
 
 const fittedPdfMax = computed(() =>
-  beta.q.map((x, i) => ({
+  beta.domain.map((x, i) => ({
     x: x,
     y: beta.fittedPdfMax[i],
   }))
 );
 
 const predictedPdf = computed(() =>
-  beta.q.map((x, i) => ({
+  beta.domain.map((x, i) => ({
     x: x,
     y: beta.predictedPdf[i],
   }))
@@ -37,7 +37,7 @@ const predictedPdf = computed(() =>
 
 const samplingPdf = computed(() =>
   beta.samplingPdf && beta.samplingPdf.length > 0
-    ? beta.q.map((x, i) => ({
+    ? beta.domain.map((x, i) => ({
         x: x,
         y: beta.samplingPdf[i],
       }))
@@ -47,7 +47,7 @@ const samplingPdf = computed(() =>
 let testModePdf = null;
 if (beta.testMode) {
   testModePdf = computed(() =>
-    beta.q.map((x, i) => ({
+    beta.domain.map((x, i) => ({
       x: x,
       y: beta.testModePdf[i],
     }))

@@ -29,21 +29,21 @@ const cdfMax = computed(() =>
 );
 
 const fittedCdfMin = computed(() =>
-  beta.q.map((x, i) => ({
+  beta.domain.map((x, i) => ({
     x: x,
     y: beta.fittedCdfMin[i],
   }))
 );
 
 const fittedCdfMax = computed(() =>
-  beta.q.map((x, i) => ({
+  beta.domain.map((x, i) => ({
     x: x,
     y: beta.fittedCdfMax[i],
   }))
 );
 
 const predictedCdf = computed(() =>
-  beta.q.map((x, i) => ({
+  beta.domain.map((x, i) => ({
     x: x,
     y: beta.predictedCdf[i],
   }))
@@ -51,7 +51,7 @@ const predictedCdf = computed(() =>
 
 const samplingCdf = computed(() =>
   beta.samplingCdf && beta.samplingCdf.length > 0
-    ? beta.q.map((x, i) => ({
+    ? beta.domain.map((x, i) => ({
         x: x,
         y: beta.samplingCdf[i],
       }))
@@ -61,12 +61,13 @@ const samplingCdf = computed(() =>
 let testModeCdf = null;
 if (beta.testMode) {
   testModeCdf = computed(() =>
-    beta.q.map((x, i) => ({
+    beta.domain.map((x, i) => ({
       x: x,
       y: beta.testModeCdf[i],
     }))
   );
 }
+
 
 const createChart = () => {
   cdfChart = new Chart(cdfChartRef.value, {

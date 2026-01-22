@@ -38,7 +38,7 @@ const beta = betaStore();
           {{ t('beta.chi2.bins-number') }}
         </td>
         <td class="border p-2 text-center" colspan="3">
-          {{ beta.bins.length - 1 }}
+          {{ beta.binEdges.length - 1 }}
         </td>
       </tr>
       <tr>
@@ -46,22 +46,7 @@ const beta = betaStore();
           {{ t('beta.chi2.critical') }} &#967;<sup>2</sup> {{ t('beta.chi2.value') }}
         </td>
         <td class="border p-2 text-center" colspan="3">
-          {{ beta.critVal.toFixed(4) }}
-        </td>
-      </tr>
-      <tr>
-        <td class="border p-2 text-left">
-          {{ t('beta.chi2.sampling-quality') }}
-        </td>
-        <td class="border p-2 text-center">
-          {{ beta.samplingChi2.toFixed(4) }}
-        </td>
-        <td class="border p-2 text-center">
-          {{ beta.samplingPval.toFixed(4) }}
-        </td>
-        <td class="border p-2 text-center">
-          <CheckIcon v-if="beta.samplingDecision" class="h-5 w-5 mx-auto"/>
-          <XMarkIcon v-else class="h-5 w-5 mx-auto"/>
+          {{ beta.chi2Pred.critical_value?.toFixed(4) ?? 'N/A' }}
         </td>
       </tr>
       <tr>
@@ -69,13 +54,13 @@ const beta = betaStore();
           {{ t('beta.chi2.predicted-quality') }}
         </td>
         <td class="border p-2 text-center">
-          {{ beta.predictedChi2.toFixed(4) }}
+          {{ beta.chi2Pred.chi2?.toFixed(4) ?? 'N/A' }}
         </td>
         <td class="border p-2 text-center">
-          {{ beta.predictedPval.toFixed(4) }}
+          {{ beta.chi2Pred.p_value?.toFixed(4) ?? 'N/A' }}
         </td>
         <td class="border p-2 text-center">
-          <CheckIcon v-if="beta.predictedDecision" class="h-5 w-5 mx-auto"/>
+          <CheckIcon v-if="!beta.chi2Pred.reject_null" class="h-5 w-5 mx-auto"/>
           <XMarkIcon v-else class="h-5 w-5 mx-auto"/>
         </td>
       </tr>
@@ -84,13 +69,13 @@ const beta = betaStore();
           {{ t('beta.chi2.min-quality') }}
         </td>
         <td class="border p-2 text-center">
-          {{ beta.minChi2.toFixed(4) }}
+          {{ beta.chi2Min.chi2?.toFixed(4) ?? 'N/A' }}
         </td>
         <td class="border p-2 text-center">
-          {{ beta.minPval.toFixed(4) }}
+          {{ beta.chi2Min.p_value?.toFixed(4) ?? 'N/A' }}
         </td>
         <td class="border p-2 text-center">
-          <CheckIcon v-if="beta.minDecision" class="h-5 w-5 mx-auto"/>
+          <CheckIcon v-if="!beta.chi2Min.reject_null" class="h-5 w-5 mx-auto"/>
           <XMarkIcon v-else class="h-5 w-5 mx-auto"/>
         </td>
       </tr>
@@ -99,28 +84,13 @@ const beta = betaStore();
           {{ t('beta.chi2.max-quality') }}
         </td>
         <td class="border p-2 text-center">
-          {{ beta.maxChi2.toFixed(4) }}
+          {{ beta.chi2Max.chi2?.toFixed(4) ?? 'N/A' }}
         </td>
         <td class="border p-2 text-center">
-          {{ beta.maxPval.toFixed(4) }}
+          {{ beta.chi2Max.p_value?.toFixed(4) ?? 'N/A' }}
         </td>
         <td class="border p-2 text-center">
-          <CheckIcon v-if="beta.maxDecision" class="h-5 w-5 mx-auto"/>
-          <XMarkIcon v-else class="h-5 w-5 mx-auto"/>
-        </td>
-      </tr>
-      <tr v-if="beta.testMode === true">
-        <td class="border p-2 text-left">
-          {{ t('beta.chi2.test-mode-quality') }}
-        </td>
-        <td class="border p-2 text-center">
-          {{  beta.testModeChi2.toFixed(4) }}
-        </td>
-        <td class="border p-2 text-center">
-          {{  beta.testModePval.toFixed(4) }}
-        </td>
-        <td class="border p-2 text-center">
-          <CheckIcon v-if="beta.testModeDecision" class="h-5 w-5 mx-auto"/>
+          <CheckIcon v-if="!beta.chi2Max.reject_null" class="h-5 w-5 mx-auto"/>
           <XMarkIcon v-else class="h-5 w-5 mx-auto"/>
         </td>
       </tr>
