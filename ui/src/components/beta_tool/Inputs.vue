@@ -125,7 +125,7 @@ const submitData = async () => {
 // Test data configuration (hardcoded for now)
 const TEST_CONFIG = {
   distribution: 0,  // Beta
-  params: [1.0, 2.0],  // alpha=1, beta=2 (asymmetric)
+  params: [2.0, 3.0],  // alpha=2, beta=3 (asymmetric)
   sampleSize: 50,
   populationSize: 1000,
   minValue: 0,
