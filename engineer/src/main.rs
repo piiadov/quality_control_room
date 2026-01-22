@@ -35,6 +35,11 @@ fn build_documentation() -> String {
 
 #[tokio::main]
 async fn main() {
+    // Install the ring crypto provider for rustls
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
+
     // Initialize logging
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::try_from_default_env()
