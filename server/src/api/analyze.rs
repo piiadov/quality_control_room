@@ -75,14 +75,19 @@ pub fn handle_analyze(req: &ApiRequest, state: &Arc<AppState>) -> ApiResponse {
 
     // XGBoost prediction
     let predicted_params = if let Some(model_path) = state.find_model(kind, sample_size) {
+        tracing::info!("Using model: {} for sample_size={}", model_path, sample_size);
         let features = [
             params_min[0] as f32,
             params_min[1] as f32,
             params_max[0] as f32,
             params_max[1] as f32,
         ];
+        tracing::debug!("Prediction features: {:?}", features);
         match xgb::predict(features, &model_path) {
-            Ok(pred) => Some([pred[0] as f64, pred[1] as f64]),
+            Ok(pred) => {
+                tracing::info!("Prediction result: {:?}", pred);
+                Some([pred[0] as f64, pred[1] as f64])
+            },
             Err(e) => {
                 resp.message = Some(format!("Prediction failed: {}", e));
                 None

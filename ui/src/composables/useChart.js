@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { onMounted, onUnmounted, watch } from 'vue';
 import { Chart, registerables } from 'chart.js';
 import { useThemeStore, useLanguageStore } from '../store';
 
@@ -58,13 +58,15 @@ export function scatterDataset(label, data, colorVar, options = {}) {
 
 /**
  * Composable for chart lifecycle management
- * @param {Object} options - Chart configuration options
- * @param {Function} options.createConfig - Function that returns chart config
- * @param {Function} options.updateData - Function to update chart data
- * @param {Function} options.updateLabels - Function to update chart labels (for i18n)
+ * @param {Ref} chartRef - Vue ref to canvas element
+ * @param {Function} createConfig - Function that returns chart config
+ * @param {Object} options - Additional options
+ * @param {Array} options.watchData - Array of reactive refs to watch for data changes
+ * @param {Function} options.onDataChange - Callback when data changes
+ * @param {Function} options.onLanguageChange - Callback when language changes
  */
-export function useChart({ createConfig, updateData, updateLabels }) {
-    const chartRef = ref(null);
+export function useChart(chartRef, createConfig, options = {}) {
+    const { watchData = [], onDataChange, onLanguageChange } = options;
     let chartInstance = null;
     
     const theme = useThemeStore();
@@ -105,21 +107,23 @@ export function useChart({ createConfig, updateData, updateLabels }) {
 
     // Watch for language changes - update labels
     watch(() => language.currentLanguage, (newLang, oldLang) => {
-        if (newLang !== oldLang && chartInstance && updateLabels) {
-            updateLabels(chartInstance);
-            chartInstance.update();
+        if (newLang !== oldLang && chartInstance && onLanguageChange) {
+            onLanguageChange(chartInstance);
         }
     });
+
+    // Watch for data changes
+    if (watchData.length > 0 && onDataChange) {
+        watch(watchData, () => {
+            if (chartInstance) {
+                onDataChange(chartInstance);
+            }
+        }, { deep: true });
+    }
 
     return {
         chartRef,
         chartInstance: () => chartInstance,
-        updateChart: () => {
-            if (chartInstance && updateData) {
-                updateData(chartInstance);
-                chartInstance.update();
-            }
-        },
         recreateChart,
     };
 }

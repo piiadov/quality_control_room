@@ -74,9 +74,9 @@ const submitData = async () => {
     // Validate sampling data
     const dataResult = validateSamplingData(
       beta.samplingData.toString(),
-      popResult.value,
       rangeResult.min,
-      rangeResult.max
+      rangeResult.max,
+      popResult.value
     );
     if (!dataResult.valid) {
       beta.errorMessage = dataResult.error;
@@ -110,6 +110,8 @@ const submitData = async () => {
     
     // Use store action to update all fields
     beta.updateFromResult(result);
+    beta.inputDisabled = false;
+    beta.showResults = true;
     sidebar.sidebarResults = true;
     
   } catch (error) {
@@ -120,13 +122,34 @@ const submitData = async () => {
   }
 };
 
+// Test data for demo/validation purposes
+// Simulated quality metrics in range [0, 100]
+const TEST_DATA = {
+  populationSize: 1000,
+  minValue: 0,
+  maxValue: 100,
+  // 50 sample measurements following roughly Beta-like distribution scaled to [0,100]
+  samplingData: [
+    42.5, 38.2, 55.1, 47.8, 51.3, 44.9, 49.2, 53.6, 46.1, 41.7,
+    57.4, 43.8, 48.5, 52.9, 45.6, 50.2, 39.4, 54.7, 47.3, 56.8,
+    44.1, 49.8, 52.3, 46.7, 41.2, 55.9, 48.1, 43.5, 50.8, 53.2,
+    45.4, 47.6, 51.7, 42.9, 54.3, 40.8, 49.5, 46.4, 52.6, 44.6,
+    48.9, 56.2, 43.1, 50.5, 47.0, 53.8, 45.9, 41.5, 54.0, 49.1
+  ]
+};
+
 watch(() => beta.testMode, (newValue) => {
-  // Think on:
-  // is there a better way to resetState on testMode changed? 
-  // may it cause a trigger loop with v-model in checkbox?
   beta.resetState();
-  beta.testMode = newValue; 
-});
+  beta.testMode = newValue;
+  
+  if (newValue) {
+    // Load test data when test mode is enabled
+    beta.populationSize = TEST_DATA.populationSize;
+    beta.minValue = TEST_DATA.minValue;
+    beta.maxValue = TEST_DATA.maxValue;
+    beta.samplingData = TEST_DATA.samplingData;
+  }
+}, { immediate: true });  // Run immediately on mount to handle default testMode: true
 
 </script>
 

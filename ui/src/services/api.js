@@ -32,8 +32,13 @@ class ApiService {
                 resolve({ status: 'connected' });
             };
 
-            this.socket.onclose = () => {
-                console.log('WebSocket closed');
+            this.socket.onclose = (event) => {
+                console.log('WebSocket closed', event.code, event.reason);
+                // Reject all pending requests on close
+                for (const [command, pending] of this.pendingRequests) {
+                    pending.reject(new Error(`Connection closed while waiting for ${command}`));
+                }
+                this.pendingRequests.clear();
                 this.socket = null;
             };
 
@@ -44,7 +49,7 @@ class ApiService {
 
             this.socket.onmessage = (event) => {
                 const response = JSON.parse(event.data);
-                console.log('Received:', response.command, response.success);
+                console.log('Received:', response.command, response.success, 'pending:', [...this.pendingRequests.keys()]);
                 
                 // Resolve pending request for this command
                 const pending = this.pendingRequests.get(response.command);
@@ -55,6 +60,8 @@ class ApiService {
                     } else {
                         pending.reject(new Error(response.message || 'Command failed'));
                     }
+                } else {
+                    console.warn('No pending request for command:', response.command);
                 }
             };
         });
@@ -71,6 +78,7 @@ class ApiService {
             }
 
             const command = request.command;
+            console.log('Sending:', command);
             
             // Store pending request
             this.pendingRequests.set(command, { resolve, reject });
@@ -81,6 +89,7 @@ class ApiService {
             // Timeout
             setTimeout(() => {
                 if (this.pendingRequests.has(command)) {
+                    console.warn('Timeout for:', command);
                     this.pendingRequests.delete(command);
                     reject(new Error(`Timeout waiting for ${command} response`));
                 }
