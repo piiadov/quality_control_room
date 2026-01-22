@@ -153,4 +153,13 @@ pub struct ApiResponse {
     /// Generated test samples
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test_data: Option<Vec<f64>>,
+    /// True distribution parameters used to generate test data
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub test_params: Option<[f64; 2]>,
+    /// True CDF curve for the generating distribution
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub test_cdf: Option<Vec<f64>>,
+    /// True PDF curve for the generating distribution
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub test_pdf: Option<Vec<f64>>,
 }

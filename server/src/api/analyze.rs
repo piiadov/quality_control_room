@@ -3,8 +3,8 @@
 use super::state::AppState;
 use super::types::{ApiRequest, ApiResponse};
 use crate::stats::{
-    bin_edges, chi_square_test, expected_freq, frequencies, generate_sample, method_of_moments,
-    scale_data, DistributionType,
+    bin_edges, cdf, chi_square_test, expected_freq, fit_ci_curves, frequencies, generate_sample,
+    method_of_moments, pdf, scale_data, DistributionType,
 };
 use crate::xgb;
 use std::sync::Arc;
@@ -69,9 +69,13 @@ pub fn handle_analyze(req: &ApiRequest, state: &Arc<AppState>) -> ApiResponse {
     // Method of moments estimate
     let sampling_params = method_of_moments(kind, &scaled);
 
-    // TODO: CDF fitting via Nelder-Mead (placeholder: use method of moments)
-    let params_min = sampling_params;
-    let params_max = sampling_params;
+    // Fit CDF curves to confidence interval bounds
+    let (params_min, params_max) = fit_ci_curves(
+        kind,
+        &scaled,
+        population_size,
+        state.config.statistics.prob_threshold_factor,
+    );
 
     // XGBoost prediction
     let predicted_params = if let Some(model_path) = state.find_model(kind, sample_size) {
@@ -173,11 +177,24 @@ pub fn handle_generate_test_data(req: &ApiRequest) -> ApiResponse {
                 kind,
                 params
             );
+            
+            // Compute true CDF and PDF curves
+            let domain = kind.domain();
+            let true_cdf: Vec<f64> = cdf(kind, &domain, params)
+                .into_iter()
+                .map(|x| 1.0 - x)  // survival CDF (1 - CDF)
+                .collect();
+            let true_pdf = pdf(kind, &domain, params);
+            
             resp.success = true;
             resp.test_data = Some(samples);
             resp.min_value = Some(min_value);
             resp.max_value = Some(max_value);
             resp.sample_size = Some(sample_size);
+            resp.test_params = Some(params);
+            resp.test_cdf = Some(true_cdf);
+            resp.test_pdf = Some(true_pdf);
+            resp.domain = Some(domain);
         }
         Err(e) => {
             resp.message = Some(e);

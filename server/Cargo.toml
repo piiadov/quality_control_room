@@ -20,6 +20,7 @@ serde_json = "1.0"
 # Statistics and distributions
 statrs = "0.18"
 rand = "0.8"
+nlopt = "0.6"
 
 # Configuration
 serde_yaml = "0.9"

@@ -607,6 +607,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "nlopt"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4580ef1b21db9b6a87d9a0abfd11265a55756b5687519a487bce54c24e64fc6e"
+dependencies = [
+ "cmake",
+]
+
+[[package]]
 name = "nu-ansi-term"
 version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1012,6 +1021,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "axum-server",
+ "nlopt",
  "rand 0.8.5",
  "serde",
  "serde_json",

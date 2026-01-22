@@ -147,6 +147,148 @@ pub fn conf_int(population_size: usize, sample_size: usize, threshold_factor: f6
 }
 
 // =============================================================================
+// CDF Curve Fitting (Nelder-Mead)
+// =============================================================================
+
+use nlopt::{Algorithm, Nlopt, Target::Minimize};
+
+/// Optimizer constants
+const OPT_MAX_EVAL: u32 = 1000;
+const OPT_XTOL: f64 = 1e-6;
+const OPT_BOUND_MARGIN: f64 = 0.1;
+const INVALID_PARAM_PENALTY: f64 = 1e10;
+
+/// Compute survival CDF (1 - CDF) for a single point
+fn survival_cdf_point(kind: DistributionType, x: f64, params: &[f64]) -> Option<f64> {
+    match kind {
+        DistributionType::Beta => {
+            Beta::new(params[0], params[1])
+                .ok()
+                .map(|d| 1.0 - d.cdf(x))
+        }
+        DistributionType::Normal => {
+            Normal::new(params[0], params[1])
+                .ok()
+                .map(|d| 1.0 - d.cdf(x))
+        }
+    }
+}
+
+/// MSE cost function for Nelder-Mead optimization
+fn mse_cost(
+    params: &[f64],
+    _grad: Option<&mut [f64]>,
+    data: &mut (&[f64], &[f64], DistributionType),
+) -> f64 {
+    let (domain, target, kind) = data;
+
+    // Invalid parameters → high cost
+    if params[0] <= 0.0 || params[1] <= 0.0 {
+        return INVALID_PARAM_PENALTY;
+    }
+
+    let mut sse = 0.0;
+    for (i, &x) in domain.iter().enumerate() {
+        match survival_cdf_point(*kind, x, params) {
+            Some(pred) => sse += (pred - target[i]).powi(2),
+            None => return INVALID_PARAM_PENALTY,
+        }
+    }
+
+    sse / domain.len() as f64
+}
+
+/// Initial guess for optimization based on distribution type
+fn init_guess(kind: DistributionType) -> [f64; 2] {
+    match kind {
+        DistributionType::Beta => [1.0, 1.0],
+        DistributionType::Normal => [0.5, 0.1],
+    }
+}
+
+/// Fit distribution parameters to survival CDF data using Nelder-Mead
+pub fn fit_cdf(kind: DistributionType, domain: &[f64], target: &[f64]) -> [f64; 2] {
+    let bounds = kind.param_bounds();
+    let init = init_guess(kind);
+
+    let mut opt = Nlopt::new(
+        Algorithm::Neldermead,
+        2,
+        mse_cost,
+        Minimize,
+        (domain, target, kind),
+    );
+
+    // Expand search bounds slightly
+    let lo_margin = 1.0 - OPT_BOUND_MARGIN;
+    let hi_margin = 1.0 + OPT_BOUND_MARGIN;
+    opt.set_lower_bounds(&[bounds[0][0] * lo_margin, bounds[1][0] * lo_margin]).unwrap();
+    opt.set_upper_bounds(&[bounds[0][1] * hi_margin, bounds[1][1] * hi_margin]).unwrap();
+    opt.set_maxeval(OPT_MAX_EVAL).unwrap();
+    opt.set_xtol_abs1(OPT_XTOL).unwrap();
+
+    let mut result = init;
+    let _ = opt.optimize(&mut result);
+    [result[0], result[1]]
+}
+
+/// Linear interpolation helper
+fn interp(x: f64, x0: f64, x1: f64, y0: f64, y1: f64) -> f64 {
+    if (x1 - x0).abs() < 1e-10 {
+        return y0;
+    }
+    y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+}
+
+/// Interpolate values from (xs, ys) onto new x-grid (xnew)
+pub fn interp_slice(xs: &[f64], ys: &[f64], xnew: &[f64]) -> Vec<f64> {
+    xnew.iter()
+        .map(|&x| {
+            // Find bracketing indices
+            let idx = xs.iter().position(|&xi| xi >= x).unwrap_or(xs.len() - 1);
+            if idx == 0 {
+                ys[0]
+            } else {
+                interp(x, xs[idx - 1], xs[idx], ys[idx - 1], ys[idx])
+            }
+        })
+        .collect()
+}
+
+/// Fit CDF curves to sample data and confidence intervals
+/// Returns (params_min, params_max) - fitted parameters for lower and upper CI bounds
+pub fn fit_ci_curves(
+    kind: DistributionType,
+    scaled_data: &[f64],
+    population_size: usize,
+    threshold_factor: f64,
+) -> ([f64; 2], [f64; 2]) {
+    let sample_size = scaled_data.len();
+    let domain = kind.domain();
+    let anchors = [domain[0], *domain.last().unwrap()];
+
+    // Compute confidence intervals
+    let (cdf_min, cdf_max) = conf_int(population_size, sample_size, threshold_factor);
+
+    // Build sample points with anchors
+    let mut samples: Vec<f64> = Vec::with_capacity(sample_size + NUM_ANCHORS);
+    samples.push(anchors[0]);
+    samples.extend_from_slice(scaled_data);
+    samples.push(anchors[1]);
+    // Note: scaled_data should already be sorted
+
+    // Interpolate CI bounds onto domain grid
+    let cdf_min_interp = interp_slice(&samples, &cdf_min, &domain);
+    let cdf_max_interp = interp_slice(&samples, &cdf_max, &domain);
+
+    // Fit curves
+    let params_min = fit_cdf(kind, &domain, &cdf_min_interp);
+    let params_max = fit_cdf(kind, &domain, &cdf_max_interp);
+
+    (params_min, params_max)
+}
+
+// =============================================================================
 // CDF and PDF Computation
 // =============================================================================
 

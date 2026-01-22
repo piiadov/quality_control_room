@@ -125,7 +125,7 @@ const submitData = async () => {
 // Test data configuration (hardcoded for now)
 const TEST_CONFIG = {
   distribution: 0,  // Beta
-  params: [2.0, 2.0],  // alpha=2, beta=2 (symmetric bell-shaped)
+  params: [1.0, 2.0],  // alpha=1, beta=2 (asymmetric)
   sampleSize: 50,
   populationSize: 1000,
   minValue: 0,
@@ -152,6 +152,12 @@ const loadTestData = async () => {
       beta.minValue = result.min_value;
       beta.maxValue = result.max_value;
       beta.samplingData = result.test_data;
+      
+      // Store true distribution data for charts
+      beta.testModeParams = result.test_params;
+      beta.testModeCdf = result.test_cdf;
+      beta.testModePdf = result.test_pdf;
+      beta.domain = result.domain;
     } else {
       beta.errorMessage = 'Failed to load test data: ' + (result.message || 'Unknown error');
     }
