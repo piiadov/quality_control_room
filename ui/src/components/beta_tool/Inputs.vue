@@ -1,13 +1,14 @@
 <script setup>
-import ApiService from '../../services/api.js'
 import { ref, computed, watch } from 'vue';
-import { settingsStore, betaStore, sidebarStore} from '../../store/index.js';
-import { useI18n, } from 'vue-i18n';
+import { useI18n } from 'vue-i18n';
+import { useSettingsStore, useBetaStore, useSidebarStore } from '../../store';
+import ApiService from '../../services/api.js';
+import { validatePopulationSize, validateRange, validateSamplingData } from '../../utils/validation';
 
 const { t } = useI18n();
-const settings = settingsStore();
-const beta = betaStore();
-const sidebar = sidebarStore();
+const settings = useSettingsStore();
+const beta = useBetaStore();
+const sidebar = useSidebarStore();
 
 const fileInput = ref(null);
 
@@ -46,66 +47,49 @@ const maxValueInputTestMode = computed(() =>
 
 const submitData = async () => {
   beta.errorMessage = "";
+  
   if (!beta.testMode) {
-    const popSize = parseInt(populationSizeInput.value, 10);
-    if (isNaN(popSize) || popSize < 1) {
-      beta.errorMessage = 'Population size: Please enter valid positive integer number';
+    // Validate population size
+    const popResult = validatePopulationSize(populationSizeInput.value);
+    if (!popResult.valid) {
+      beta.errorMessage = popResult.error;
       beta.populationSize = NaN;
       beta.showResults = false;
       return;
-    } else {
-      beta.populationSize = popSize;
     }
+    beta.populationSize = popResult.value;
 
-    const minValue = parseFloat(minValueInput.value);
-    const maxValue = parseFloat(maxValueInput.value);
-    if (isNaN(minValue) || isNaN(maxValue)) {
-      beta.errorMessage = 'Min or Max value: Please enter valid float number';
-      beta.minValue = NaN;
-      beta.maxValue = NaN;
-      beta.showResults = false;
-      return;
-    } else {
-      beta.minValue = minValue;
-      beta.maxValue = maxValue;
-    }
-
-    if (minValue >= maxValue) {
-      beta.errorMessage = 'Min value must be less than max value';
+    // Validate min/max range
+    const rangeResult = validateRange(minValueInput.value, maxValueInput.value);
+    if (!rangeResult.valid) {
+      beta.errorMessage = rangeResult.error;
       beta.minValue = NaN;
       beta.maxValue = NaN;
       beta.showResults = false;
       return;
     }
+    beta.minValue = rangeResult.min;
+    beta.maxValue = rangeResult.max;
 
-    const data = stringToNumberArray(beta.samplingData.toString());
-    if (data.length === 0) {
-      beta.errorMessage = 'Sampling data: Please enter valid float numbers';
-      beta.showResults = false;
-      return;
-    } else {
-      beta.samplingData = data;
-    }
-
-    if (popSize < data.length) {
-      beta.errorMessage = 'Population size must be greater than sample size';
-      beta.showResults = false;
-      return;
-    }
-
-    const areAllValuesInRange = data.every(value => value >= beta.minValue && value <= beta.maxValue);
-    if (!areAllValuesInRange) {
-      beta.errorMessage = 'Sampling data: All values must be within the specified range';
+    // Validate sampling data
+    const dataResult = validateSamplingData(
+      beta.samplingData.toString(),
+      popResult.value,
+      rangeResult.min,
+      rangeResult.max
+    );
+    if (!dataResult.valid) {
+      beta.errorMessage = dataResult.error;
       beta.showResults = false;
       return;
     }
+    beta.samplingData = dataResult.data;
   }
 
   beta.inputDisabled = true;
   const api = new ApiService(settings.backendUrl, settings.connectTimeout);
   
   try {
-    // Call fullAnalysis which handles all split commands
     const result = await api.fullAnalysis(
       beta.distribution,
       beta.samplingData,
@@ -124,49 +108,8 @@ const submitData = async () => {
       return;
     }
     
-    // Update store with results
-    beta.errorMessage = "";
-    beta.inputDisabled = false;
-    
-    // From analyze command
-    beta.sampleSize = result.sample_size;
-    beta.populationSize = result.population_size;
-    beta.minValue = result.min_value;
-    beta.maxValue = result.max_value;
-    beta.scaledData = result.scaled_data;
-    beta.paramsMin = result.params_min;
-    beta.paramsMax = result.params_max;
-    beta.predictedParams = result.predicted_params;
-    beta.samplingParams = result.sampling_params;
-    beta.chi2Min = result.chi2_min;
-    beta.chi2Max = result.chi2_max;
-    beta.chi2Pred = result.chi2_pred;
-    
-    // From get_intervals
-    beta.cdfMin = result.cdf_min;
-    beta.cdfMax = result.cdf_max;
-    
-    // From get_cdf
-    beta.domain = result.domain;
-    beta.fittedCdfMin = result.fitted_cdf_min;
-    beta.fittedCdfMax = result.fitted_cdf_max;
-    beta.predictedCdf = result.predicted_cdf;
-    beta.samplingCdf = result.sampling_cdf;
-    
-    // From get_pdf
-    beta.fittedPdfMin = result.fitted_pdf_min;
-    beta.fittedPdfMax = result.fitted_pdf_max;
-    beta.predictedPdf = result.predicted_pdf;
-    beta.samplingPdf = result.sampling_pdf;
-    
-    // From get_histogram
-    beta.binEdges = result.bin_edges;
-    beta.observedFreq = result.observed_freq;
-    beta.expectedFreqMin = result.expected_freq_min;
-    beta.expectedFreqMax = result.expected_freq_max;
-    beta.expectedFreqPred = result.expected_freq_pred;
-    
-    beta.showResults = true;
+    // Use store action to update all fields
+    beta.updateFromResult(result);
     sidebar.sidebarResults = true;
     
   } catch (error) {

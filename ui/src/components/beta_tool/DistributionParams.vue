@@ -1,9 +1,9 @@
 <script setup>
-import {betaStore} from "../../store/index.js";
+import { useBetaStore } from "../../store";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n()
-const beta = betaStore();
+const beta = useBetaStore();
 </script>
 
 <template>

@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted } from "vue";
-import { sidebarStore, betaStore } from "../../store/index.js";
+import { useSidebarStore, useBetaStore } from "../../store";
 import Inputs from "./Inputs.vue";
 import Cdf from "./Cdf.vue";
 import Pdf from "./Pdf.vue";
@@ -9,8 +9,8 @@ import ChiSquared from "./ChiSquared.vue";
 import Freq from "./Freq.vue";
 import { useI18n } from "vue-i18n";
 
-const sidebar = sidebarStore();
-const beta = betaStore();
+const sidebar = useSidebarStore();
+const beta = useBetaStore();
 const { t } = useI18n();
 
 onMounted(() => {

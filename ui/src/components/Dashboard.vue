@@ -1,13 +1,13 @@
 <script setup>
-import { sidebarStore, betaStore, normalStore, defectsStore } from "../store/index.js";
-import {WrenchScrewdriverIcon, DocumentChartBarIcon} from "@heroicons/vue/24/outline/index.js";
+import { useSidebarStore, useBetaStore, useNormalStore, useDefectsStore } from "../store";
+import { WrenchScrewdriverIcon, DocumentChartBarIcon } from "@heroicons/vue/24/outline/index.js";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
-const sidebar = sidebarStore();
-const beta = betaStore();
-const normal = normalStore();
-const defects = defectsStore();
+const sidebar = useSidebarStore();
+const beta = useBetaStore();
+const normal = useNormalStore();
+const defects = useDefectsStore();
 </script>
 
 <template>

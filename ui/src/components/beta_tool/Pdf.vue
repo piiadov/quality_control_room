@@ -1,253 +1,87 @@
 <script setup>
 
-import { onMounted, onUnmounted, ref, computed, watch } from "vue";
-import { betaStore, themeStore, languageStore } from "../../store/index.js";
-import { Chart, registerables } from "chart.js";
+import { ref, computed } from "vue";
+import { useBetaStore } from "../../store";
+import { useChart, getCssVar, mapToXY, lineDataset, getDefaultChartOptions } from "../../composables";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
-const beta = betaStore();
-const theme = themeStore();
-const language = languageStore();
+const beta = useBetaStore();
 
-Chart.register(...registerables);
 const pdfChartRef = ref(null);
-let pdfChart = null;
 
-const fittedPdfMin = computed(() =>
-  beta.domain.map((x, i) => ({
-    x: x,
-    y: beta.fittedPdfMin[i],
-  }))
+// Computed data mappings
+const fittedPdfMin = computed(() => mapToXY(beta.domain, beta.fittedPdfMin));
+const fittedPdfMax = computed(() => mapToXY(beta.domain, beta.fittedPdfMax));
+const predictedPdf = computed(() => mapToXY(beta.domain, beta.predictedPdf));
+const samplingPdf = computed(() => 
+  beta.samplingPdf?.length > 0 ? mapToXY(beta.domain, beta.samplingPdf) : []
+);
+const testModePdf = computed(() => 
+  beta.testMode ? mapToXY(beta.domain, beta.testModePdf) : []
 );
 
-const fittedPdfMax = computed(() =>
-  beta.domain.map((x, i) => ({
-    x: x,
-    y: beta.fittedPdfMax[i],
-  }))
-);
-
-const predictedPdf = computed(() =>
-  beta.domain.map((x, i) => ({
-    x: x,
-    y: beta.predictedPdf[i],
-  }))
-);
-
-const samplingPdf = computed(() =>
-  beta.samplingPdf && beta.samplingPdf.length > 0
-    ? beta.domain.map((x, i) => ({
-        x: x,
-        y: beta.samplingPdf[i],
-      }))
-    : []
-);
-
-let testModePdf = null;
-if (beta.testMode) {
-  testModePdf = computed(() =>
-    beta.domain.map((x, i) => ({
-      x: x,
-      y: beta.testModePdf[i],
-    }))
-  );
-}
-
-const createChart = () => {
-  pdfChart = new Chart(pdfChartRef.value, {
-    type: 'scatter',
-    data: {
-      datasets: [
-        {
-          type: 'line',
-          label: t('beta.pdf.pdf-min'),
-          data: fittedPdfMin.value,
-          borderColor: getComputedStyle(document.documentElement)
-          .getPropertyValue('--pdf-min-color').trim(),
-          backgroundColor: getComputedStyle(document.documentElement)
-          .getPropertyValue('--pdf-min-color').trim(),
-          borderWidth: 2,
-          fill: false,
-          pointRadius: 0,
-        },
-        {
-          type: 'line',
-          label: t('beta.pdf.pdf-max'),
-          data: fittedPdfMax.value,
-          borderColor: getComputedStyle(document.documentElement)
-          .getPropertyValue('--pdf-max-color').trim(),
-          backgroundColor: getComputedStyle(document.documentElement)
-          .getPropertyValue('--pdf-max-color').trim(),
-          borderWidth: 2,
-          fill: false,
-          pointRadius: 0,
-        },
-        {
-          type: 'line',
-          label: t('beta.pdf.predicted-pdf'),
-          data: predictedPdf.value,
-          borderColor: getComputedStyle(document.documentElement)
-          .getPropertyValue('--pdf-predicted-color').trim(),
-          backgroundColor: getComputedStyle(document.documentElement)
-          .getPropertyValue('--pdf-predicted-color').trim(),
-          borderWidth: 2,
-          fill: false,
-          pointRadius: 0,
-        },
-        ...(samplingPdf.value && samplingPdf.value.length > 0
-          ? [
-              {
-                type: 'line',
-                label: t('beta.pdf.sampling-pdf'),
-                data: samplingPdf.value,
-                borderColor: getComputedStyle(document.documentElement)
-                  .getPropertyValue('--pdf-sampling-color').trim(),
-                backgroundColor: getComputedStyle(document.documentElement)
-                  .getPropertyValue('--pdf-sampling-color').trim(),
-                borderWidth: 2,
-                fill: false,
-                pointRadius: 0,
-              },
-            ]
-          : []
-        ),
-        ...(beta.testMode
-          ? [
-              {
-                type: 'line',
-                label: t('beta.pdf.test-mode-pdf'),
-                data: testModePdf.value,
-                borderColor: getComputedStyle(document.documentElement)
-                .getPropertyValue('--pdf-testmode-color').trim(),
-                backgroundColor: getComputedStyle(document.documentElement)
-                .getPropertyValue('--pdf-testmode-color').trim(),
-                borderWidth: 2,
-                fill: false,
-                pointRadius: 0,
-              },
-            ]
-          : []
-        ),
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            font: {
-              size: 12,
-            },
-          },
-        },
-        title: {
-          display: true,
-          text: t('beta.pdf.chart-title'),
-          font: {
-            size: 14,
-          },
-        },
-      },
-      scales: {
-        x: {
-          type: 'linear',
-          position: 'bottom',
-          title: {
-            display: true,
-            text: 'x',
-          },
-          min: 0,
-          max: 1,
-          ticks: {
-            stepSize: 0.1,
-          },
-          grid: {
-            color: getComputedStyle(document.documentElement)
-                  .getPropertyValue('--grid-color').trim(),
-          },
-        },
-        y: {
-          title: {
-            display: true,
-            text: '\u03C1(x)',
-          },
-          ticks: {
-            stepSize: 0.1,
-          },
-          grid: {
-            color: getComputedStyle(document.documentElement)
-                  .getPropertyValue('--grid-color').trim(),
-          },
-        },
+const createChart = () => ({
+  type: 'scatter',
+  data: {
+    datasets: [
+      lineDataset(t('beta.pdf.pdf-min'), fittedPdfMin.value, getCssVar('--pdf-min-color')),
+      lineDataset(t('beta.pdf.pdf-max'), fittedPdfMax.value, getCssVar('--pdf-max-color')),
+      lineDataset(t('beta.pdf.predicted-pdf'), predictedPdf.value, getCssVar('--pdf-predicted-color')),
+      ...(samplingPdf.value.length > 0
+        ? [lineDataset(t('beta.pdf.sampling-pdf'), samplingPdf.value, getCssVar('--pdf-sampling-color'))]
+        : []),
+      ...(beta.testMode
+        ? [lineDataset(t('beta.pdf.test-mode-pdf'), testModePdf.value, getCssVar('--pdf-testmode-color'))]
+        : []),
+    ],
+  },
+  options: {
+    ...getDefaultChartOptions(t('beta.pdf.chart-title'), 'x', '\u03C1(x)'),
+    scales: {
+      ...getDefaultChartOptions(t('beta.pdf.chart-title'), 'x', '\u03C1(x)').scales,
+      y: {
+        title: { display: true, text: '\u03C1(x)' },
+        ticks: { stepSize: 0.1 },
+        grid: { color: getCssVar('--grid-color') },
       },
     },
-  });
-}
-
-onMounted(() => {
-  if (pdfChart === null) {
-    createChart();
-  }
+  },
 });
 
-onUnmounted(() => {
-  if (pdfChart) {
-    pdfChart.destroy();
+const updateChartData = (chart) => {
+  chart.data.datasets[0].data = fittedPdfMin.value;
+  chart.data.datasets[1].data = fittedPdfMax.value;
+  chart.data.datasets[2].data = predictedPdf.value;
+  if (samplingPdf.value.length > 0 && chart.data.datasets[3]) {
+    chart.data.datasets[3].data = samplingPdf.value;
   }
-})
-
-watch(
-  () => [
-    fittedPdfMin,
-    fittedPdfMax,
-    predictedPdf,
-    samplingPdf,
-    testModePdf,
-  ],
-  () => {
-    if (pdfChart) {
-      pdfChart.data.datasets[0].data = fittedPdfMin.value;
-      pdfChart.data.datasets[1].data = fittedPdfMax.value;
-      pdfChart.data.datasets[2].data = predictedPdf.value;
-      if (samplingPdf.value && samplingPdf.value.length > 0) {
-        pdfChart.data.datasets[3].data = samplingPdf.value;
-      }
-      if (beta.testMode) {
-        pdfChart.data.datasets[4].data = testModePdf.value;
-      }
-      pdfChart.update();
-    }
-  },
-  { deep: true }
-);
-
-watch(
-  () => [theme.currentTheme, language.currentLanguage],
-  ([newTheme, newLanguage], [oldTheme, oldLanguage]) => {
-    if (pdfChart) {
-      if (newTheme !== oldTheme) {
-        pdfChart.destroy();
-        createChart();
-      }
-      if (newLanguage !== oldLanguage) {
-        pdfChart.options.plugins.title.text = t('beta.pdf.chart-title');
-        pdfChart.data.datasets[0].label = t('beta.pdf.pdf-min');
-        pdfChart.data.datasets[1].label = t('beta.pdf.pdf-max');
-        pdfChart.data.datasets[2].label = t('beta.pdf.predicted-pdf');
-        if (beta.samplingPdf && beta.samplingPdf.length > 0) {
-          pdfChart.data.datasets[3].label = t('beta.pdf.sampling-pdf');
-        }
-        if (beta.testMode) {
-          pdfChart.data.datasets[4].label = t('beta.pdf.test-mode-pdf');
-        }
-        pdfChart.update();
-      }
-    }
+  if (beta.testMode && chart.data.datasets[4]) {
+    chart.data.datasets[4].data = testModePdf.value;
   }
-);
+  chart.update();
+};
+
+const updateChartLabels = (chart) => {
+  chart.options.plugins.title.text = t('beta.pdf.chart-title');
+  chart.data.datasets[0].label = t('beta.pdf.pdf-min');
+  chart.data.datasets[1].label = t('beta.pdf.pdf-max');
+  chart.data.datasets[2].label = t('beta.pdf.predicted-pdf');
+  if (beta.samplingPdf?.length > 0 && chart.data.datasets[3]) {
+    chart.data.datasets[3].label = t('beta.pdf.sampling-pdf');
+  }
+  if (beta.testMode && chart.data.datasets[4]) {
+    chart.data.datasets[4].label = t('beta.pdf.test-mode-pdf');
+  }
+  chart.update();
+};
+
+// Use composable for chart lifecycle
+useChart(pdfChartRef, createChart, {
+  watchData: [fittedPdfMin, fittedPdfMax, predictedPdf, samplingPdf, testModePdf],
+  onDataChange: updateChartData,
+  onLanguageChange: updateChartLabels,
+});
 
 </script>
 

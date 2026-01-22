@@ -1,10 +1,10 @@
 <script setup>
-import {CheckIcon, XMarkIcon} from "@heroicons/vue/24/outline/index.js";
-import { betaStore } from "../../store/index.js";
+import { CheckIcon, XMarkIcon } from "@heroicons/vue/24/outline/index.js";
+import { useBetaStore } from "../../store";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n()
-const beta = betaStore();
+const beta = useBetaStore();
 </script>
 
 <template>

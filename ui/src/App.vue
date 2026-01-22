@@ -1,12 +1,12 @@
 <script setup>
   import { HomeIcon, InformationCircleIcon, SunIcon, MoonIcon } from "@heroicons/vue/24/outline";
-  import { themeStore, languageStore } from "./store";
+  import { useThemeStore, useLanguageStore } from "./store";
   import { useI18n } from "vue-i18n";
   import { ref } from "vue";
 
   const { t } = useI18n();
-  const theme = themeStore();
-  const language = languageStore();
+  const theme = useThemeStore();
+  const language = useLanguageStore();
   const showBanner = ref(true);
 </script>
 

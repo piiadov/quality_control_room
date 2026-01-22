@@ -5,7 +5,7 @@ import 'flag-icons/css/flag-icons.min.css';
 import './style.css'
 import App from './App.vue'
 import router from './router';
-import {themeStore} from "./store/index.js";
+import { useThemeStore } from "./store";
 import i18n from './services/i18n.js';
 
 const app = createApp(App);
@@ -14,6 +14,6 @@ app.use(router);
 app.use(createPinia());
 app.use(i18n);
 
-themeStore().applyTheme();
+useThemeStore().applyTheme();
 
 app.mount('#app');

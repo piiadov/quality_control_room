@@ -1,9 +1,9 @@
 <script setup>
 import { onMounted } from 'vue';
-import { sidebarStore, normalStore } from '../../store/index.js';
+import { useSidebarStore, useNormalStore } from '../../store';
 
-const normal = normalStore();
-const sidebar = sidebarStore();
+const normal = useNormalStore();
+const sidebar = useSidebarStore();
 
 onMounted(() => {
   sidebar.activeTool = normal;
