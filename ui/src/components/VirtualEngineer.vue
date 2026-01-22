@@ -27,9 +27,20 @@ const currentResponse = ref('');
 
 // Engineer WebSocket URL
 const engineerUrl = computed(() => {
-  const serverUrl = settings.backendUrl || 'wss://quality-control.io:8082';
-  // Replace port 8081 with 8082 for engineer service
-  return serverUrl.replace(':8081', ':8082').replace('/ws', '') + '/ws';
+  const serverUrl = settings.backendUrl || 'wss://quality-control.io:8081/quality';
+  // Extract base URL and replace port 8081 with 8082 for engineer service
+  try {
+    const url = new URL(serverUrl);
+    url.port = '8082';
+    url.pathname = '/ws';
+    return url.toString();
+  } catch {
+    // Fallback: simple string replacement
+    return serverUrl
+      .replace(':8081', ':8082')
+      .replace('/quality', '/ws')
+      .replace('/ws/ws', '/ws');
+  }
 });
 
 // Build context from current analysis
