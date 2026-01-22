@@ -2,6 +2,11 @@
 //!
 //! A standalone WebSocket server for quality control analysis.
 //!
+//! # Build Modes
+//!
+//! - **Debug**: HTTP only (no TLS required)
+//! - **Release**: HTTPS required (TLS config must be present)
+//!
 //! # Usage
 //!
 //! ```bash
@@ -17,6 +22,7 @@ use axum::{
     routing::get,
     Router,
 };
+#[cfg(not(debug_assertions))]
 use axum_server::tls_rustls::RustlsConfig;
 use libserver::api::{handle_request, ApiRequest, ApiResponse, AppState};
 use libserver::config::Config;
@@ -46,6 +52,13 @@ async fn main() {
     println!("╚═══════════════════════════════════════════════════════════════╝");
     println!();
 
+    // Show build mode
+    #[cfg(debug_assertions)]
+    println!("Build mode: DEBUG (HTTP only)");
+    #[cfg(not(debug_assertions))]
+    println!("Build mode: RELEASE (HTTPS required)");
+    println!();
+
     // Load configuration
     println!("Loading configuration from: {}", config_path);
     let config = match Config::load(config_path) {
@@ -55,6 +68,14 @@ async fn main() {
             std::process::exit(1);
         }
     };
+
+    // Release mode: require TLS config
+    #[cfg(not(debug_assertions))]
+    if config.server.tls.is_none() {
+        eprintln!("Error: TLS configuration required in release mode");
+        eprintln!("Add 'tls' section to config.yaml with cert_path and key_path");
+        std::process::exit(1);
+    }
 
     // Initialize XGBoost wrapper
     println!("Initializing XGBoost wrapper...");
@@ -85,9 +106,29 @@ async fn main() {
 
     println!();
 
-    // Start server (with or without TLS)
-    if let Some(tls) = &config.server.tls {
-        println!("Starting HTTPS/WSS server...");
+    // Debug mode: HTTP only
+    #[cfg(debug_assertions)]
+    {
+        if config.server.tls.is_some() {
+            println!("Note: TLS config ignored in debug mode");
+        }
+        println!("Starting HTTP/WS server (debug mode)...");
+        println!(
+            "  URL: ws://{}:{}/{}",
+            config.server.host, config.server.port, config.server.ws_path
+        );
+
+        let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+        if let Err(e) = axum::serve(listener, app).await {
+            eprintln!("Server error: {}", e);
+        }
+    }
+
+    // Release mode: HTTPS required
+    #[cfg(not(debug_assertions))]
+    {
+        let tls = config.server.tls.as_ref().unwrap();
+        println!("Starting HTTPS/WSS server (release mode)...");
         println!("  TLS cert: {}", tls.cert_path);
         println!("  TLS key: {}", tls.key_path);
         println!(
@@ -107,17 +148,6 @@ async fn main() {
             .serve(app.into_make_service())
             .await
         {
-            eprintln!("Server error: {}", e);
-        }
-    } else {
-        println!("Starting HTTP/WS server (no TLS)...");
-        println!(
-            "  URL: ws://{}:{}/{}",
-            config.server.host, config.server.port, config.server.ws_path
-        );
-
-        let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-        if let Err(e) = axum::serve(listener, app).await {
             eprintln!("Server error: {}", e);
         }
     }

@@ -31,5 +31,5 @@ statistics:
   # Default number of histogram bins
   default_bins: 10
   
-  # Probability threshold factor for quality intervals
+  # Probability threshold factor for quality intervals (must match trained models)
   prob_threshold_factor: 10.0

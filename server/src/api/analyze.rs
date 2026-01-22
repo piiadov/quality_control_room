@@ -1,0 +1,129 @@
+//! Handlers: about, analyze
+
+use super::state::AppState;
+use super::types::{ApiRequest, ApiResponse};
+use crate::stats::{
+    bin_edges, chi_square_test, expected_freq, frequencies, method_of_moments, scale_data,
+    DistributionType,
+};
+use crate::xgb;
+use std::sync::Arc;
+
+/// Handle "about" command
+pub fn handle_about() -> ApiResponse {
+    ApiResponse {
+        command: "about".into(),
+        success: true,
+        version: Some(env!("CARGO_PKG_VERSION").into()),
+        message: Some("Quality Control Room Server".into()),
+        ..Default::default()
+    }
+}
+
+/// Handle "analyze" - core analysis, returns params and chi2 only
+pub fn handle_analyze(req: &ApiRequest, state: &Arc<AppState>) -> ApiResponse {
+    let mut resp = ApiResponse {
+        command: "analyze".into(),
+        ..Default::default()
+    };
+
+    let kind = match DistributionType::from_u8(req.distribution) {
+        Some(k) => k,
+        None => {
+            resp.message = Some(format!("Invalid distribution type: {}", req.distribution));
+            return resp;
+        }
+    };
+
+    if req.data.is_empty() {
+        resp.message = Some("Data is empty".into());
+        return resp;
+    }
+
+    if req.data.iter().any(|x| x.is_nan() || x.is_infinite()) {
+        resp.message = Some("Data contains NaN or infinite values".into());
+        return resp;
+    }
+
+    let min_val = req
+        .min_value
+        .unwrap_or_else(|| req.data.iter().cloned().fold(f64::INFINITY, f64::min));
+    let max_val = req
+        .max_value
+        .unwrap_or_else(|| req.data.iter().cloned().fold(f64::NEG_INFINITY, f64::max));
+
+    if min_val >= max_val {
+        resp.message = Some("min_value must be less than max_value".into());
+        return resp;
+    }
+
+    // Scale data to [0, 1]
+    let mut scaled = scale_data(&req.data, min_val, max_val);
+    scaled.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+    let sample_size = scaled.len();
+    let population_size = req
+        .population_size
+        .unwrap_or(state.config.statistics.default_population_size);
+
+    // Method of moments estimate
+    let sampling_params = method_of_moments(kind, &scaled);
+
+    // TODO: CDF fitting via Nelder-Mead (placeholder: use method of moments)
+    let params_min = sampling_params;
+    let params_max = sampling_params;
+
+    // XGBoost prediction
+    let predicted_params = if let Some(model_path) = state.find_model(kind, sample_size) {
+        let features = [
+            params_min[0] as f32,
+            params_min[1] as f32,
+            params_max[0] as f32,
+            params_max[1] as f32,
+        ];
+        match xgb::predict(features, &model_path) {
+            Ok(pred) => Some([pred[0] as f64, pred[1] as f64]),
+            Err(e) => {
+                resp.message = Some(format!("Prediction failed: {}", e));
+                None
+            }
+        }
+    } else {
+        resp.message = Some("No model found for sample size".into());
+        None
+    };
+
+    // Chi-square tests (quick, using default bins)
+    let domain = kind.domain();
+    let num_bins = state.config.statistics.default_bins;
+    let bins = bin_edges(domain[0], *domain.last().unwrap(), num_bins);
+    let observed = frequencies(&bins, &scaled);
+
+    let exp_min = expected_freq(kind, params_min, &bins, sample_size);
+    let chi2_min = chi_square_test(&observed, &exp_min, state.config.statistics.alpha);
+
+    let exp_max = expected_freq(kind, params_max, &bins, sample_size);
+    let chi2_max = chi_square_test(&observed, &exp_max, state.config.statistics.alpha);
+
+    let chi2_pred = predicted_params.map(|pred| {
+        let exp = expected_freq(kind, pred, &bins, sample_size);
+        chi_square_test(&observed, &exp, state.config.statistics.alpha)
+    });
+
+    // Build minimal response
+    resp.success = true;
+    resp.sample_size = Some(sample_size);
+    resp.population_size = Some(population_size);
+    resp.min_value = Some(min_val);
+    resp.max_value = Some(max_val);
+    resp.scaled_data = Some(scaled);
+    resp.params_min = Some(params_min);
+    resp.params_max = Some(params_max);
+    resp.predicted_params = predicted_params;
+    resp.sampling_params = Some(sampling_params);
+    resp.chi2_min = Some(chi2_min);
+    resp.chi2_max = Some(chi2_max);
+    resp.chi2_pred = chi2_pred;
+
+    resp
+}
