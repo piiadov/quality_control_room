@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { marked } from 'marked';
-import helpMarkdown from '../assets/help.md?raw';
+import helpMarkdown from 'virtual:help-markdown';
 
 const htmlContent = computed(() => marked(helpMarkdown));
 </script>
