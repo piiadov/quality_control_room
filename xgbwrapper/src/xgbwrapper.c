@@ -310,23 +310,23 @@ XGBWrapperStatus xgbw_train_eval(
     }
 
     /* Parse config and train */
-    int n_estimators = 0;
+    int num_boost_round = 0;
     for (int i = 0; i < len_config; ++i) {
         if (config[i].key == NULL || config[i].value == NULL) continue;
-        if (strcmp(config[i].key, "n_estimators") == 0) {
-            n_estimators = atoi(config[i].value);
+        if (strcmp(config[i].key, "num_boost_round") == 0) {
+            num_boost_round = atoi(config[i].value);
             continue;
         }
         XGBoosterSetParam(booster, config[i].key, config[i].value);
     }
 
-    if (n_estimators < 1) {
-        xgbw_set_error("xgbw_train_eval: n_estimators must be >= 1 (got %d)", n_estimators);
+    if (num_boost_round < 1) {
+        xgbw_set_error("xgbw_train_eval: num_boost_round must be >= 1 (got %d)", num_boost_round);
         result = XGBW_ERROR_INVALID_PARAM;
         goto cleanup_xgb;
     }
 
-    for (int iter = 0; iter < n_estimators; ++iter) {
+    for (int iter = 0; iter < num_boost_round; ++iter) {
         status = XGBoosterUpdateOneIter(booster, iter, dtrain);
         if (status != 0) {
             xgbw_set_error("xgbw_train_eval: iteration %d failed: %s", iter, XGBGetLastError());

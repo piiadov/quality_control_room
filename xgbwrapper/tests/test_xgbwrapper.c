@@ -87,8 +87,8 @@ void test_train_eval(void) {
         {"booster", "gbtree"},
         {"objective", "reg:squarederror"},
         {"max_depth", "6"},
-        {"learning_rate", "0.1"},
-        {"n_estimators", "50"},
+        {"eta", "0.1"},
+        {"num_boost_round", "50"},
         {"verbosity", "0"}
     };
     int len_config = sizeof(config) / sizeof(config[0]);

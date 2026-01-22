@@ -112,8 +112,8 @@ typedef enum {
  * Both key and value are null-terminated C strings.
  */
 typedef struct {
-    const char *key;    /**< Parameter name (e.g., "max_depth", "learning_rate") */
-    const char *value;  /**< Parameter value as string (e.g., "10", "0.3") */
+    const char *key;    /**< Parameter name (e.g., "max_depth", "eta") */
+    const char *value;  /**< Parameter value as string (e.g., "4", "0.1") */
 } KVPair;
 
 /* ===========================================================================
@@ -185,7 +185,7 @@ XGBWRAPPER_API const char* xgbw_status_string(XGBWrapperStatus status);
  * 
  * @return XGBW_SUCCESS, or error code on failure
  * 
- * @note The "n_estimators" config parameter controls boosting iterations (required).
+ * @note The "num_boost_round" config parameter controls boosting iterations (required).
  */
 XGBWRAPPER_API XGBWrapperStatus xgbw_train_eval(
     const float* x, const float* y,

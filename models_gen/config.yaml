@@ -36,7 +36,7 @@ xgboost:
   
   # Learning
   eta: "0.1"
-  num_round: "200"
+  num_boost_round: "200"
   
   # Sampling (regularization)
   subsample: "0.8"

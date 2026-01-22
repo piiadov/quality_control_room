@@ -2,6 +2,8 @@
 //!
 //! Handles synthetic distribution data generation, confidence intervals,
 //! and CDF curve fitting for feature preparation.
+//!
+//! See `THEORY.md` in project root for detailed mathematical explanation.
 
 use interp::{interp_slice, InterpMode};
 use nlopt::{Algorithm, Nlopt, Target::Minimize};
@@ -11,6 +13,33 @@ use rayon::prelude::*;
 use statrs::distribution::{Beta, ContinuousCDF, Discrete, Hypergeometric, Normal};
 use statrs::statistics::Statistics;
 use std::fmt;
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+/// Number of anchor points added to samples (domain boundaries)
+const NUM_ANCHORS: usize = 2;
+
+/// Domain grid resolution for Beta distribution (0 to 1)
+const BETA_DOMAIN_POINTS: usize = 101;
+
+/// Domain grid resolution for Normal distribution (wider range)
+const NORMAL_DOMAIN_POINTS: usize = 201;
+
+/// Normal distribution domain extends ±2σ beyond [0,1] for cutoff
+const NORMAL_DOMAIN_MARGIN: f64 = 0.5;
+
+/// Factor for quality interval probability threshold (higher = wider intervals)
+const PROB_THRESHOLD_FACTOR: f64 = 10.0;
+
+/// Penalty cost for invalid parameters during optimization
+const INVALID_PARAM_PENALTY: f64 = 1e10;
+
+/// Optimizer settings
+const OPT_MAX_EVAL: u32 = 10000;
+const OPT_XTOL: f64 = 1e-20;
+const OPT_BOUND_MARGIN: f64 = 0.3; // Expand bounds by 30% for fitting
 
 // =============================================================================
 // Distribution Types
@@ -41,27 +70,36 @@ impl DistributionType {
         }
     }
 
-    /// Parameter bounds for optimization
+    /// Parameter bounds for optimization.
+    /// Beta: α,β ∈ [0.1, 10] covers most practical unimodal shapes.
+    /// Normal: μ ∈ [ε, 1-ε], σ ∈ [ε, 1/6] (6σ range fits in [0,1]).
     fn param_bounds(&self) -> [[f64; 2]; 2] {
         match self {
             DistributionType::Beta => [[0.1, 10.0], [0.1, 10.0]],
+            // Normal on [0,1]: σ_max=1/6 ensures 99.7% (±3σ) within bounds
             DistributionType::Normal => [[1e-3, 1.0 - 1e-3], [1e-3, 1.0 / 6.0]],
         }
     }
 
-    /// Initial guess for optimization
+    /// Initial guess for Nelder-Mead optimization.
+    /// Beta: start near uniform; Normal: centered with moderate spread.
     fn init_guess(&self) -> [f64; 2] {
         match self {
-            DistributionType::Beta => [0.1, 0.1],
-            DistributionType::Normal => [0.5, 1.0 / 6.0],
+            DistributionType::Beta => [1.0, 1.0], // Uniform prior
+            DistributionType::Normal => [0.5, 0.1], // Centered, σ=0.1
         }
     }
 
-    /// Domain for interpolation
+    /// Domain grid for interpolation and fitting.
     fn domain(&self) -> Vec<f64> {
         match self {
-            DistributionType::Beta => linspace(0.0, 1.0, 101),
-            DistributionType::Normal => linspace(-0.5, 1.5, 201),
+            DistributionType::Beta => linspace(0.0, 1.0, BETA_DOMAIN_POINTS),
+            // Extended domain for Normal: allows for tails beyond [0,1]
+            DistributionType::Normal => linspace(
+                -NORMAL_DOMAIN_MARGIN,
+                1.0 + NORMAL_DOMAIN_MARGIN,
+                NORMAL_DOMAIN_POINTS,
+            ),
         }
     }
 
@@ -126,10 +164,11 @@ fn hypergeometric_pmf_fallback(n_total: u64, k_total: u64, n: u64, k: u64) -> f6
 // Confidence Intervals
 // =============================================================================
 
-/// Calculate quality interval using hypergeometric distribution
+/// Calculate quality interval using hypergeometric distribution.
+///
+/// Returns (lo, hi) bounds on true population proportion given observed successes.
+/// More successes → higher bounds, fewer successes → lower bounds.
 fn quality_interval(pop_size: u64, samp_size: u64, samp_successes: u64) -> (f64, f64) {
-    const PROB_THRESHOLD_FACTOR: f64 = 10.0;
-
     let prob: Vec<f64> = (samp_successes..=pop_size - samp_size + samp_successes)
         .map(|pop_successes| {
             let p = Hypergeometric::new(pop_size, pop_successes, samp_size)
@@ -153,13 +192,19 @@ fn quality_interval(pop_size: u64, samp_size: u64, samp_successes: u64) -> (f64,
     )
 }
 
-/// Calculate confidence intervals for all sample outcomes
+/// Calculate confidence intervals for all sample outcomes.
+///
+/// Returns arrays of size (sample_size + NUM_ANCHORS) for anchors + samples:
+/// - Index 0: anchor = 1.0 (survival at domain minimum)
+/// - Index 1..=n: quality bounds for k=n,n-1,...,1 successes (monotonically decreasing)
+/// - Index n+1: anchor = 0.0 (survival at domain maximum)
 pub fn conf_int(population_size: usize, sample_size: usize) -> (Vec<f64>, Vec<f64>) {
-    let mut cdf_min = vec![0.0; sample_size + 2];
-    let mut cdf_max = vec![0.0; sample_size + 2];
-    cdf_min[0] = 1.0;
+    let mut cdf_min = vec![0.0; sample_size + NUM_ANCHORS];
+    let mut cdf_max = vec![0.0; sample_size + NUM_ANCHORS];
+    cdf_min[0] = 1.0; // Anchor: S(x_min) = 1.0
     cdf_max[0] = 1.0;
 
+    // Fill in reverse: k=n (high quality) to k=1 (low quality)
     for (i, k) in (1..=sample_size).rev().enumerate() {
         let (lo, hi) = quality_interval(
             population_size as u64,
@@ -207,7 +252,7 @@ pub fn target_prepare(
 // Feature Preparation (CDF Curve Fitting)
 // =============================================================================
 
-/// MSE cost function for optimization
+/// MSE cost function for Nelder-Mead optimization
 fn mse_cost(
     params: &[f64],
     _grad: Option<&mut [f64]>,
@@ -216,23 +261,23 @@ fn mse_cost(
     let (domain, target, kind) = data;
     let n = domain.len();
 
-    // Invalid parameters → high cost
+    // Invalid parameters → high cost to reject
     if params[0] <= 0.0 || params[1] <= 0.0 {
-        return 1e10;
+        return INVALID_PARAM_PENALTY;
     }
 
     let mut sse = 0.0;
     for i in 0..n {
         match kind.survival_cdf(domain[i], params) {
             Some(pred) => sse += (pred - target[i]).powi(2),
-            None => return 1e10,
+            None => return INVALID_PARAM_PENALTY,
         }
     }
 
     sse / n as f64
 }
 
-/// Fit distribution parameters to CDF data using Nelder-Mead
+/// Fit distribution parameters to survival CDF data using Nelder-Mead
 fn fit_cdf(domain: &Vec<f64>, target: &Vec<f64>, kind: &DistributionType) -> [f64; 2] {
     let bounds = kind.param_bounds();
     let init = kind.init_guess();
@@ -245,10 +290,13 @@ fn fit_cdf(domain: &Vec<f64>, target: &Vec<f64>, kind: &DistributionType) -> [f6
         (domain, target, kind),
     );
 
-    opt.set_lower_bounds(&[bounds[0][0] * 0.7, bounds[1][0] * 0.7]).unwrap();
-    opt.set_upper_bounds(&[bounds[0][1] * 1.3, bounds[1][1] * 1.3]).unwrap();
-    opt.set_maxeval(10000).unwrap();
-    opt.set_xtol_abs1(1e-20).unwrap();
+    // Expand search bounds slightly beyond parameter bounds
+    let lo_margin = 1.0 - OPT_BOUND_MARGIN;
+    let hi_margin = 1.0 + OPT_BOUND_MARGIN;
+    opt.set_lower_bounds(&[bounds[0][0] * lo_margin, bounds[1][0] * lo_margin]).unwrap();
+    opt.set_upper_bounds(&[bounds[0][1] * hi_margin, bounds[1][1] * hi_margin]).unwrap();
+    opt.set_maxeval(OPT_MAX_EVAL).unwrap();
+    opt.set_xtol_abs1(OPT_XTOL).unwrap();
 
     let mut result = init;
     let _ = opt.optimize(&mut result);
@@ -270,14 +318,15 @@ pub fn features_prepare_nm(
         .map(|d| {
             let mut rng = rng();
 
-            // Sample and sort
-            let mut samples: Vec<f64> = Vec::with_capacity(sample_size + 2);
+            // Sample and add anchors (domain boundaries)
+            let mut samples: Vec<f64> = Vec::with_capacity(sample_size + NUM_ANCHORS);
             samples.push(anchors[0]);
             samples.extend((0..sample_size).map(|_| d.sample(&mut rng)));
             samples.push(anchors[1]);
             samples.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
-            // Interpolate confidence bounds
+            // Interpolate: (sorted_samples, quality_bounds) → domain grid
+            // Mapping: smallest sample → high survival prob, largest → low survival prob
             let cdf_min_interp = interp_slice(&samples, &cdf_min, &domain, &InterpMode::default());
             let cdf_max_interp = interp_slice(&samples, &cdf_max, &domain, &InterpMode::default());
 

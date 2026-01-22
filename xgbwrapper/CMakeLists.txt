@@ -132,16 +132,13 @@ if(XGBWRAPPER_BUILD_TESTS)
         INSTALL_RPATH "${LIB_OUTPUT_DIR}"
     )
     
-    # Register tests
-    add_test(NAME test_shuffle COMMAND test_xgbwrapper test_shuffle)
-    add_test(NAME test_split_data COMMAND test_xgbwrapper test_split_data)
-    add_test(NAME test_generate_data COMMAND test_xgbwrapper test_generate_data)
-    add_test(NAME test_generate_simple_data COMMAND test_xgbwrapper test_generate_simple_data)
-    add_test(NAME test_xgboost COMMAND test_xgbwrapper test_xgboost)
+    # Register tests (v0.4.0 simplified API)
+    add_test(NAME test_train_eval COMMAND test_xgbwrapper test_train_eval)
+    add_test(NAME test_predict COMMAND test_xgbwrapper test_predict)
+    add_test(NAME test_all COMMAND test_xgbwrapper test_all)
     
     # Set test environment
-    set_tests_properties(test_shuffle test_split_data test_generate_data 
-                         test_generate_simple_data test_xgboost
+    set_tests_properties(test_train_eval test_predict test_all
         PROPERTIES
             ENVIRONMENT "LD_LIBRARY_PATH=${LIB_OUTPUT_DIR}:$ENV{LD_LIBRARY_PATH}"
     )

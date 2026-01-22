@@ -46,7 +46,7 @@ pub struct XGBoostConfig {
     pub max_depth: String,
     pub gamma: String,
     pub eta: String,
-    pub num_round: String,
+    pub num_boost_round: String,
     pub subsample: String,
     pub colsample_bytree: String,
     pub reg_alpha: String,
@@ -65,7 +65,7 @@ impl XGBoostConfig {
             ("max_depth", self.max_depth.clone()),
             ("gamma", self.gamma.clone()),
             ("eta", self.eta.clone()),
-            ("n_estimators", self.num_round.clone()),  // XGBoost C API uses n_estimators
+            ("num_boost_round", self.num_boost_round.clone()),
             ("subsample", self.subsample.clone()),
             ("colsample_bytree", self.colsample_bytree.clone()),
             ("reg_alpha", self.reg_alpha.clone()),
