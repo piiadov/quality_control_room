@@ -3,11 +3,26 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { marked } from 'marked';
 import helpMarkdown from 'virtual:help-markdown';
 
-// Configure marked to generate heading IDs
-marked.use({
-  headerIds: true,
-  mangle: false
-});
+// Helper to create slug from text
+const slugify = (text) => {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+};
+
+// Custom renderer to add IDs to headings
+const renderer = {
+  heading({ tokens, depth }) {
+    const text = tokens.map(t => t.raw || t.text || '').join('');
+    const id = slugify(text);
+    return `<h${depth} id="${id}">${this.parser.parseInline(tokens)}</h${depth}>`;
+  }
+};
+
+marked.use({ renderer });
 
 const htmlContent = computed(() => marked(helpMarkdown));
 const contentRef = ref(null);
@@ -21,7 +36,6 @@ const handleClick = (e) => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
-      // Update URL without triggering navigation
       history.pushState(null, '', target.hash);
     }
   }
@@ -30,6 +44,16 @@ const handleClick = (e) => {
 onMounted(() => {
   if (contentRef.value) {
     contentRef.value.addEventListener('click', handleClick);
+  }
+  // Handle initial hash on page load
+  if (window.location.hash) {
+    setTimeout(() => {
+      const id = window.location.hash.slice(1);
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
   }
 });
 
