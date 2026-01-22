@@ -70,6 +70,7 @@ pub struct TrainResult {
 /// Train model with auto split and evaluation.
 /// 
 /// Calls xgbw_train_eval which handles: split → train → predict → RMSE → save.
+#[allow(clippy::too_many_arguments)] // Mirrors xgbwrapper C API
 pub fn train_eval(
     x: &[f32],
     y: &[f32],

@@ -35,9 +35,10 @@ impl MetricsWriter {
     
     /// Write metrics header if file doesn't exist
     pub fn ensure_header(&self) -> std::io::Result<()> {
-        if !metadata(&self.path).is_ok() {
+        if metadata(&self.path).is_err() {
             let mut file = OpenOptions::new()
                 .create(true)
+                .truncate(true)
                 .write(true)
                 .open(&self.path)?;
             
