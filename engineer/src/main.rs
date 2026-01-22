@@ -74,9 +74,9 @@ async fn main() {
         .layer(cors)
         .with_state(state);
 
-    // Check for TLS certificates
-    let cert_path = PathBuf::from("/etc/ssl/certs/quality-control.io-fullchain.crt");
-    let key_path = PathBuf::from("/etc/ssl/private/quality-control.io.key");
+    // Check for TLS certificates (same paths as server)
+    let cert_path = PathBuf::from("/etc/letsencrypt/live/quality-control.io/fullchain.pem");
+    let key_path = PathBuf::from("/etc/letsencrypt/live/quality-control.io/privkey.pem");
 
     let port: u16 = std::env::var("ENGINEER_PORT")
         .ok()
