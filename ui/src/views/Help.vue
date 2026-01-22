@@ -1,36 +1,14 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { computed } from 'vue';
 import { marked } from 'marked';
+import helpMarkdown from '../assets/help.md?raw';
 
-const htmlContent = ref('');
-const loading = ref(true);
-const error = ref('');
-
-onMounted(async () => {
-  try {
-    const response = await fetch(`${import.meta.env.BASE_URL}help.txt`);
-    if (!response.ok) {
-      throw new Error(`Failed to load help content: ${response.status}`);
-    }
-    const markdown = await response.text();
-    htmlContent.value = marked(markdown);
-  } catch (e) {
-    error.value = e.message;
-  } finally {
-    loading.value = false;
-  }
-});
+const htmlContent = computed(() => marked(helpMarkdown));
 </script>
 
 <template>
   <div class="p-8 max-w-4xl mx-auto">
-    <div v-if="loading" class="text-center text-textSecondary">
-      Loading...
-    </div>
-    <div v-else-if="error" class="text-center text-red-500">
-      {{ error }}
-    </div>
-    <div v-else class="markdown-content" v-html="htmlContent"></div>
+    <div class="markdown-content" v-html="htmlContent"></div>
   </div>
 </template>
 
