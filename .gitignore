@@ -15,3 +15,6 @@ out/
 
 # Model instances
 models/
+
+# Specific for my environment
+setup_guide.md
