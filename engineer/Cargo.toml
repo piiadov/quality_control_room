@@ -6,7 +6,7 @@ description = "Virtual Engineer AI Chat Service for Quality Control Room"
 
 [dependencies]
 axum = { version = "0.8", features = ["ws"] }
-axum-server = { version = "0.8", features = ["tls-rustls"] }
+axum-server = { version = "0.8", features = ["tls-rustls-ring"] }
 tokio = { version = "1", features = ["full"] }
 tower = "0.5"
 futures-util = "0.3"
