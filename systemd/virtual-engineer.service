@@ -17,5 +17,8 @@ Environment=ENGINEER_MODEL=phi3:mini
 StandardOutput=journal
 StandardError=journal
 
+# Allow reading Let's Encrypt certificates
+ReadOnlyPaths=/etc/letsencrypt
+
 [Install]
 WantedBy=multi-user.target
