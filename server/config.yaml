@@ -1,0 +1,35 @@
+# Server Configuration
+# Quality Control Room WebSocket API
+
+server:
+  # Bind address (0.0.0.0 for all interfaces)
+  host: "0.0.0.0"
+  port: 8081
+  
+  # WebSocket path
+  ws_path: "quality"
+  
+  # TLS configuration (optional, comment out for HTTP)
+  tls:
+    cert_path: "/etc/letsencrypt/live/quality-control.io/fullchain.pem"
+    key_path: "/etc/letsencrypt/live/quality-control.io/privkey.pem"
+
+models:
+  # Directory containing trained XGBoost models
+  models_dir: "../models"
+  
+  # Available sample sizes (must match trained models)
+  sample_sizes: [5, 10, 20, 50, 100]
+
+statistics:
+  # Default population size for confidence intervals
+  default_population_size: 10000
+  
+  # Chi-square test significance level
+  alpha: 0.05
+  
+  # Default number of histogram bins
+  default_bins: 10
+  
+  # Probability threshold factor for quality intervals
+  prob_threshold_factor: 10.0
