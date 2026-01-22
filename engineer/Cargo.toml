@@ -1,0 +1,22 @@
+[package]
+name = "virtual-engineer"
+version = "0.1.0"
+edition = "2021"
+description = "Virtual Engineer AI Chat Service for Quality Control Room"
+
+[dependencies]
+axum = { version = "0.8", features = ["ws"] }
+axum-server = { version = "0.8", features = ["tls-rustls"] }
+tokio = { version = "1", features = ["full"] }
+tower = "0.5"
+futures-util = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tower-http = { version = "0.6", features = ["cors"] }
+
+[profile.release]
+opt-level = 3
+lto = true

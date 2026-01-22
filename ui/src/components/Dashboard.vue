@@ -1,13 +1,17 @@
 <script setup>
+import { ref } from 'vue';
 import { useSidebarStore, useBetaStore, useNormalStore, useDefectsStore } from "../store";
 import { WrenchScrewdriverIcon, DocumentChartBarIcon } from "@heroicons/vue/24/outline/index.js";
 import { useI18n } from "vue-i18n";
+import VirtualEngineer from "./VirtualEngineer.vue";
 
 const { t } = useI18n();
 const sidebar = useSidebarStore();
 const beta = useBetaStore();
 const normal = useNormalStore();
 const defects = useDefectsStore();
+
+const showEngineer = ref(false);
 </script>
 
 <template>
@@ -58,7 +62,7 @@ const defects = useDefectsStore();
           <button class="results-button mb-4 min-w-full">
             {{ t('sidebar.gen-report') }}
           </button>
-          <button class="results-button mb-4 min-w-full">
+          <button class="results-button mb-4 min-w-full" @click="showEngineer = true">
             {{ t('sidebar.virt-engineer') }}
           </button>
         </div>
@@ -69,6 +73,9 @@ const defects = useDefectsStore();
     <div class="flex-1 p-6">
       <router-view />
     </div>
+    
+    <!-- Virtual Engineer Chat Modal -->
+    <VirtualEngineer :visible="showEngineer" @close="showEngineer = false" />
   </div>
 </template>
 

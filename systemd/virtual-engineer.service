@@ -1,0 +1,21 @@
+[Unit]
+Description=Virtual Engineer AI Chat Service
+After=network.target ollama.service
+Wants=ollama.service
+
+[Service]
+Type=simple
+User=vp
+Group=vp
+WorkingDirectory=/home/vp/quality_control_room
+ExecStart=/home/vp/quality_control_room/engineer/target/release/virtual-engineer
+Restart=always
+RestartSec=5
+Environment=RUST_LOG=virtual_engineer=info
+Environment=ENGINEER_PORT=8082
+Environment=ENGINEER_MODEL=phi3:mini
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
