@@ -6,6 +6,7 @@
 use serde::Serialize;
 use statrs::distribution::{Beta, ChiSquared, ContinuousCDF, Continuous, Discrete, Hypergeometric, Normal};
 use statrs::statistics::Statistics;
+use rand::distributions::Distribution;
 
 // =============================================================================
 // Constants
@@ -305,6 +306,64 @@ pub fn method_of_moments(kind: DistributionType, data: &[f64]) -> [f64; 2] {
         }
         DistributionType::Normal => {
             [mean, std_dev.max(1e-6)]
+        }
+    }
+}
+
+// =============================================================================
+// Random Sample Generation
+// =============================================================================
+
+/// Generate random samples from a distribution
+///
+/// # Arguments
+/// * `kind` - Distribution type (Beta or Normal)
+/// * `params` - Distribution parameters [alpha, beta] or [mean, std]
+/// * `n` - Number of samples to generate
+/// * `min_value` - Minimum value for scaling
+/// * `max_value` - Maximum value for scaling
+///
+/// # Returns
+/// Samples scaled to [min_value, max_value]
+pub fn generate_sample(
+    kind: DistributionType,
+    params: [f64; 2],
+    n: usize,
+    min_value: f64,
+    max_value: f64,
+) -> Result<Vec<f64>, String> {
+    let mut rng = rand::thread_rng();
+    let range = max_value - min_value;
+    
+    match kind {
+        DistributionType::Beta => {
+            let dist = Beta::new(params[0], params[1])
+                .map_err(|e| format!("Invalid Beta parameters: {}", e))?;
+            
+            let samples: Vec<f64> = (0..n)
+                .map(|_| {
+                    // Sample from Beta [0,1] and scale to [min_value, max_value]
+                    let x = dist.sample(&mut rng);
+                    min_value + x * range
+                })
+                .collect();
+            
+            Ok(samples)
+        }
+        DistributionType::Normal => {
+            // For Normal, params are [mean, std] in [0,1] space
+            let dist = Normal::new(params[0], params[1])
+                .map_err(|e| format!("Invalid Normal parameters: {}", e))?;
+            
+            let samples: Vec<f64> = (0..n)
+                .map(|_| {
+                    // Sample and clamp to [0,1], then scale
+                    let x = dist.sample(&mut rng).clamp(0.0, 1.0);
+                    min_value + x * range
+                })
+                .collect();
+            
+            Ok(samples)
         }
     }
 }

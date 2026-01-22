@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 /// Incoming WebSocket request
 #[derive(Debug, Deserialize)]
 pub struct ApiRequest {
-    /// Command: "about", "analyze", "get_intervals", "get_cdf", "get_pdf", "get_histogram"
+    /// Command: "about", "analyze", "get_intervals", "get_cdf", "get_pdf", "get_histogram", "generate_test_data"
     pub command: String,
 
     /// Distribution type: 0 = Beta, 1 = Normal
@@ -29,6 +29,15 @@ pub struct ApiRequest {
     /// Population size for hypergeometric CI
     #[serde(default)]
     pub population_size: Option<usize>,
+
+    // === For "generate_test_data" ===
+    /// Distribution parameters [alpha, beta] or [mean, std]
+    #[serde(default)]
+    pub params: Option<[f64; 2]>,
+
+    /// Sample size for test data generation
+    #[serde(default)]
+    pub sample_size: Option<usize>,
 
     // === For curve/histogram requests (client sends params back) ===
     /// Params from CI lower bound fit
@@ -139,4 +148,9 @@ pub struct ApiResponse {
     pub expected_freq_max: Option<Vec<f64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expected_freq_pred: Option<Vec<f64>>,
+
+    // === "generate_test_data" ===
+    /// Generated test samples
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub test_data: Option<Vec<f64>>,
 }

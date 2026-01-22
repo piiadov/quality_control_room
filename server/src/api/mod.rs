@@ -36,7 +36,7 @@ pub use state::AppState;
 pub use types::{ApiRequest, ApiResponse};
 
 // Re-export handlers (for testing/direct use)
-pub use analyze::{handle_about, handle_analyze};
+pub use analyze::{handle_about, handle_analyze, handle_generate_test_data};
 pub use curves::{handle_get_cdf, handle_get_intervals, handle_get_pdf};
 pub use histogram::handle_get_histogram;
 
@@ -51,6 +51,7 @@ pub fn handle_request(req: &ApiRequest, state: &Arc<AppState>) -> ApiResponse {
         "get_cdf" => handle_get_cdf(req),
         "get_pdf" => handle_get_pdf(req),
         "get_histogram" => handle_get_histogram(req, state),
+        "generate_test_data" => handle_generate_test_data(req),
         _ => ApiResponse {
             command: req.command.clone(),
             success: false,

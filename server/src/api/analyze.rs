@@ -3,8 +3,8 @@
 use super::state::AppState;
 use super::types::{ApiRequest, ApiResponse};
 use crate::stats::{
-    bin_edges, chi_square_test, expected_freq, frequencies, method_of_moments, scale_data,
-    DistributionType,
+    bin_edges, chi_square_test, expected_freq, frequencies, generate_sample, method_of_moments,
+    scale_data, DistributionType,
 };
 use crate::xgb;
 use std::sync::Arc;
@@ -129,6 +129,60 @@ pub fn handle_analyze(req: &ApiRequest, state: &Arc<AppState>) -> ApiResponse {
     resp.chi2_min = Some(chi2_min);
     resp.chi2_max = Some(chi2_max);
     resp.chi2_pred = chi2_pred;
+
+    resp
+}
+
+/// Handle "generate_test_data" - generate random samples from a distribution
+pub fn handle_generate_test_data(req: &ApiRequest) -> ApiResponse {
+    let mut resp = ApiResponse {
+        command: "generate_test_data".into(),
+        ..Default::default()
+    };
+
+    let kind = match DistributionType::from_u8(req.distribution) {
+        Some(k) => k,
+        None => {
+            resp.message = Some(format!("Invalid distribution type: {}", req.distribution));
+            return resp;
+        }
+    };
+
+    let params = match req.params {
+        Some(p) => p,
+        None => {
+            resp.message = Some("Missing params parameter".into());
+            return resp;
+        }
+    };
+
+    let sample_size = req.sample_size.unwrap_or(50);
+    let min_value = req.min_value.unwrap_or(0.0);
+    let max_value = req.max_value.unwrap_or(100.0);
+
+    if min_value >= max_value {
+        resp.message = Some("min_value must be less than max_value".into());
+        return resp;
+    }
+
+    match generate_sample(kind, params, sample_size, min_value, max_value) {
+        Ok(samples) => {
+            tracing::info!(
+                "Generated {} samples from {:?} with params {:?}",
+                sample_size,
+                kind,
+                params
+            );
+            resp.success = true;
+            resp.test_data = Some(samples);
+            resp.min_value = Some(min_value);
+            resp.max_value = Some(max_value);
+            resp.sample_size = Some(sample_size);
+        }
+        Err(e) => {
+            resp.message = Some(e);
+        }
+    }
 
     resp
 }

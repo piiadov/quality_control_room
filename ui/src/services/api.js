@@ -114,6 +114,26 @@ class ApiService {
     // =========================================================================
 
     /**
+     * Generate test data from a distribution
+     * @param {number} distribution - 0=Beta, 1=Normal
+     * @param {number[]} params - Distribution parameters [alpha, beta] or [mean, std]
+     * @param {number} sampleSize - Number of samples to generate
+     * @param {number} minValue - Minimum value for scaling
+     * @param {number} maxValue - Maximum value for scaling
+     */
+    async generateTestData(distribution, params, sampleSize, minValue, maxValue) {
+        await this.connect();
+        return this.send({
+            command: 'generate_test_data',
+            distribution,
+            params,
+            sample_size: sampleSize,
+            min_value: minValue,
+            max_value: maxValue,
+        });
+    }
+
+    /**
      * Get server info
      */
     async about() {

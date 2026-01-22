@@ -122,20 +122,43 @@ const submitData = async () => {
   }
 };
 
-// Test data for demo/validation purposes
-// Simulated quality metrics in range [0, 100]
-const TEST_DATA = {
+// Test data configuration (hardcoded for now)
+const TEST_CONFIG = {
+  distribution: 0,  // Beta
+  params: [2.0, 2.0],  // alpha=2, beta=2 (symmetric bell-shaped)
+  sampleSize: 50,
   populationSize: 1000,
   minValue: 0,
   maxValue: 100,
-  // 50 sample measurements following roughly Beta-like distribution scaled to [0,100]
-  samplingData: [
-    42.5, 38.2, 55.1, 47.8, 51.3, 44.9, 49.2, 53.6, 46.1, 41.7,
-    57.4, 43.8, 48.5, 52.9, 45.6, 50.2, 39.4, 54.7, 47.3, 56.8,
-    44.1, 49.8, 52.3, 46.7, 41.2, 55.9, 48.1, 43.5, 50.8, 53.2,
-    45.4, 47.6, 51.7, 42.9, 54.3, 40.8, 49.5, 46.4, 52.6, 44.6,
-    48.9, 56.2, 43.1, 50.5, 47.0, 53.8, 45.9, 41.5, 54.0, 49.1
-  ]
+};
+
+// Load test data from server
+const loadTestData = async () => {
+  const api = new ApiService(settings.backendUrl, settings.connectTimeout);
+  
+  try {
+    const result = await api.generateTestData(
+      TEST_CONFIG.distribution,
+      TEST_CONFIG.params,
+      TEST_CONFIG.sampleSize,
+      TEST_CONFIG.minValue,
+      TEST_CONFIG.maxValue
+    );
+    
+    api.close();
+    
+    if (result.success) {
+      beta.populationSize = TEST_CONFIG.populationSize;
+      beta.minValue = result.min_value;
+      beta.maxValue = result.max_value;
+      beta.samplingData = result.test_data;
+    } else {
+      beta.errorMessage = 'Failed to load test data: ' + (result.message || 'Unknown error');
+    }
+  } catch (error) {
+    api.close();
+    beta.errorMessage = 'Failed to load test data: ' + error.message;
+  }
 };
 
 watch(() => beta.testMode, (newValue) => {
@@ -143,11 +166,8 @@ watch(() => beta.testMode, (newValue) => {
   beta.testMode = newValue;
   
   if (newValue) {
-    // Load test data when test mode is enabled
-    beta.populationSize = TEST_DATA.populationSize;
-    beta.minValue = TEST_DATA.minValue;
-    beta.maxValue = TEST_DATA.maxValue;
-    beta.samplingData = TEST_DATA.samplingData;
+    // Load test data from server when test mode is enabled
+    loadTestData();
   }
 }, { immediate: true });  // Run immediately on mount to handle default testMode: true
 
