@@ -8,9 +8,9 @@ const error = ref('');
 
 onMounted(async () => {
   try {
-    const response = await fetch('/help.md');
+    const response = await fetch(`${import.meta.env.BASE_URL}help.txt`);
     if (!response.ok) {
-      throw new Error('Failed to load help content');
+      throw new Error(`Failed to load help content: ${response.status}`);
     }
     const markdown = await response.text();
     htmlContent.value = marked(markdown);
