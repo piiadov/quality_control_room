@@ -1,14 +1,48 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { marked } from 'marked';
 import helpMarkdown from 'virtual:help-markdown';
 
+// Configure marked to generate heading IDs
+marked.use({
+  headerIds: true,
+  mangle: false
+});
+
 const htmlContent = computed(() => marked(helpMarkdown));
+const contentRef = ref(null);
+
+// Handle anchor clicks for smooth scrolling
+const handleClick = (e) => {
+  const target = e.target.closest('a');
+  if (target && target.hash && target.pathname === window.location.pathname) {
+    e.preventDefault();
+    const id = target.hash.slice(1);
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+      // Update URL without triggering navigation
+      history.pushState(null, '', target.hash);
+    }
+  }
+};
+
+onMounted(() => {
+  if (contentRef.value) {
+    contentRef.value.addEventListener('click', handleClick);
+  }
+});
+
+onUnmounted(() => {
+  if (contentRef.value) {
+    contentRef.value.removeEventListener('click', handleClick);
+  }
+});
 </script>
 
 <template>
   <div class="p-8 max-w-4xl mx-auto">
-    <div class="markdown-content" v-html="htmlContent"></div>
+    <div ref="contentRef" class="markdown-content" v-html="htmlContent"></div>
   </div>
 </template>
 
